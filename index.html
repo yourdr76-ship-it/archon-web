@@ -1,59 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archon Terminal</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archon Terminal Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #050505; --surf: #0E0E0E; --txt: #BFBFBF; --accent: #7CFFB2; --div: #1A1A1A; }
-        body { background: var(--bg); color: var(--txt); font-family: "Courier New", monospace; padding: 20px; margin: 0; text-align: center; }
-        .console { background: var(--surf); border: 1px solid var(--div); border-radius: 4px; padding: 15px; text-align: left; min-height: 400px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-        .neon-txt { color: var(--accent); text-shadow: 0 0 5px var(--accent); font-weight: bold; }
-        .loading { animation: pulse 1.5s infinite; color: var(--accent); margin: 20px 0; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        body, html { margin: 0; padding: 0; height: 100%; background-color: #030303; color: #1DB954; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
+        
+        /* Background Effects */
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; opacity: 0.2; }
+        .crt::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
+        
+        /* Terminal Interface */
+        .terminal-container { position: relative; z-index: 3; padding: 30px; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; background: radial-gradient(circle, transparent 20%, #000000 120%); }
+        .header { text-align: center; border-bottom: 1px solid #1DB954; padding-bottom: 15px; margin-bottom: 20px; text-shadow: 0 0 10px #1DB954; letter-spacing: 2px; }
+        .output { flex-grow: 1; overflow-y: auto; text-shadow: 0 0 5px #1DB954; font-size: 14px; line-height: 1.5; padding-right: 10px; }
+        
+        /* Text Styles */
+        .highlight { color: #ffffff; text-shadow: 0 0 8px #ffffff; font-weight: bold; }
+        .error { color: #ff3333; text-shadow: 0 0 8px #ff3333; }
+        .typing-cursor::after { content: '█'; animation: blink 1s step-start infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
-<body>
-    <h2 class="neon-txt">ARCHON INTELLIGENCE v4.0</h2>
-    <div id="loader" class="loading" style="display:none;">[ STATUS ] INTERROGATING GLOBAL NODES...</div>
-    <div class="console" id="console">> AWAITING PAYLOAD...</div>
+<body class="crt">
+    <canvas id="matrix"></canvas>
+    
+    <div class="terminal-container">
+        <div class="header">
+            <h2>[ ARCHON INTELLIGENCE v4.0 ]</h2>
+            <small>SECURE OSINT UPLINK ESTABLISHED</small>
+        </div>
+        <div id="output" class="output"></div>
+    </div>
 
     <script>
+        // --- VISUAL: MATRIX RAIN BACKGROUND ---
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const letters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*'.split('');
+        const fontSize = 14; 
+        const columns = canvas.width / fontSize;
+        const drops = []; for(let x = 0; x < columns; x++) drops[x] = 1;
+        
+        setInterval(() => {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#1DB954'; ctx.font = fontSize + 'px monospace';
+            for(let i = 0; i < drops.length; i++) {
+                const text = letters[Math.floor(Math.random() * letters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }, 33);
+
+        // --- CORE: OSINT LOGIC ---
         let tg = window.Telegram.WebApp; tg.expand();
         const params = new URLSearchParams(window.location.search);
-        const target = params.get('target');
+        let target = params.get('target');
         const type = params.get('type');
         const uid = params.get('uid');
+        const output = document.getElementById('output');
 
-        if (target && uid) { executeTrace(target, type, uid); }
+        // Fix the Telegram "Plus Sign" Bug
+        if (target && type === 'phone' && !target.startsWith('+')) {
+            target = '+' + target.trim(); 
+        }
 
-        async function executeTrace(t, tp, u) {
-            const consoleDiv = document.getElementById('console');
-            const loader = document.getElementById('loader');
-            loader.style.display = 'block';
-            consoleDiv.innerHTML = `<p>> TARGET: ${t}<br>> PROTOCOL: ${tp.toUpperCase()}_SCAN</p>`;
+        // ⚠️ RENDER LINK GOES HERE ⚠️
+        const BACKEND_URL = "https://YOUR_RENDER_URL.onrender.com"; 
+
+        async function typeText(text, delay = 25, className = '') {
+            const p = document.createElement('div');
+            if (className) p.className = className;
+            output.appendChild(p);
+            
+            p.classList.add('typing-cursor');
+            for (let i = 0; i < text.length; i++) {
+                p.innerHTML = text.substring(0, i + 1);
+                await new Promise(r => setTimeout(r, delay));
+            }
+            p.classList.remove('typing-cursor');
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function executeHack() {
+            if(!target || !uid) { await typeText("> ACCESS DENIED. UNAUTHORIZED USER.", 50, "error"); return; }
+            
+            // Simulated hacking delay for cinematic effect
+            await typeText("> INITIALIZING ARCHON DATABANKS...");
+            await typeText(`> TARGET LOCKED: ${target}`, 40, "highlight");
+            await typeText(`> EXECUTING PROTOCOL: ${type.toUpperCase()}_SCAN`);
+            await typeText("> BYPASSING REGIONAL FIREWALLS...");
+            await new Promise(r => setTimeout(r, 800)); 
 
             try {
-                // WE WILL REPLACE THE URL BELOW WITH YOUR RENDER URL IN THE NEXT PHASE
-                const response = await fetch(`https://YOUR_RENDER_URL_HERE.onrender.com/api/scan?target=${t}&type=${tp}&uid=${u}`);
+                const response = await fetch(`${BACKEND_URL}/api/scan?target=${encodeURIComponent(target)}&type=${type}&uid=${uid}`);
                 const data = await response.json();
-                loader.style.display = 'none';
-                
-                if(data.error) { consoleDiv.innerHTML += `<p style="color:#FF4C4C">> ERROR: ${data.error}</p>`; return; }
 
-                let res = `<p class="neon-txt">> DECRYPTION COMPLETE</p><hr style="border:0.5px solid var(--div)">`;
-                if(tp === 'email') {
-                    res += `<p><b>ACTIVE SOCIAL LINKS:</b></p>`;
-                    data.socials.forEach(s => { res += `<p style="color:var(--accent)">[+] ${s}</p>`; });
+                if(data.error) { await typeText(`> ERROR: ${data.error}`, 50, "error"); return; }
+
+                await typeText(`\n> DECRYPTION SUCCESSFUL. COMPILING DATA...\n`, 40, "highlight");
+                
+                if(type === 'email') {
+                    if(data.socials.length === 0) { await typeText("> STATUS: GHOST. NO LINKED PLATFORMS FOUND."); }
+                    else {
+                        await typeText("> IDENTIFIED ACCOUNTS:");
+                        for(let s of data.socials) { await typeText(`  [+] ${s}`, 20); }
+                    }
                 } else {
-                    res += `<p><b>REGION:</b> ${data.location}</p><p><b>CARRIER:</b> ${data.carrier}</p>`;
+                    await typeText(`> GEO-LOCATION: ${data.location || 'UNKNOWN'}`);
+                    await typeText(`> NETWORK CARRIER: ${data.carrier || 'UNKNOWN'}`);
                 }
-                consoleDiv.innerHTML = res + `<p>> END OF DATA.</p>`;
+                
+                await typeText(`\n> OPERATION CONCLUDED. WAITING FOR NEXT TARGET...`);
             } catch (e) {
-                loader.style.display = 'none';
-                consoleDiv.innerHTML += `<p style="color:#FF4C4C">> CRITICAL: API MAINFRAME OFFLINE</p>`;
+                await typeText(`\n> CRITICAL FAILURE: API MAINFRAME OFFLINE`, 50, "error");
+                await typeText(`> CHECK SERVER STATUS.`, 50, "error");
             }
         }
+
+        executeHack();
     </script>
 </body>
 </html>
