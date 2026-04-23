@@ -1,163 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archon Ultra-Elite Terminal</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Archon V6: Phantom Core</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --neon: #00f3ff; --pink: #ff00f3; --bg: #010101; --dim: rgba(0, 243, 255, 0.1); }
+        :root { --neon: #00ff41; --danger: #ff3e3e; --pink: #ff00f3; --bg: #000; --dim: rgba(0, 255, 65, 0.1); }
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; height: 100%; overflow: hidden; }
 
-        /* CRT & Scanline Effects */
-        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 100; pointer-events: none; background-size: 100% 2px, 3px 100%; }
-        .flicker { animation: flicker 0.15s infinite; }
-        @keyframes flicker { 0% { opacity: 0.97; } 50% { opacity: 1; } 100% { opacity: 0.98; } }
+        /* Animation: Moving Grid */
+        .grid-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(var(--dim) 1px, transparent 1px), linear-gradient(90deg, var(--dim) 1px, transparent 1px); background-size: 45px 45px; z-index: -1; animation: moveGrid 25s linear infinite; }
+        @keyframes moveGrid { from { background-position: 0 0; } to { background-position: 0 1000px; } }
 
-        /* Authorization Screen */
-        #auth-screen { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .fingerprint { width: 80px; height: 80px; border: 2px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; box-shadow: 0 0 20px var(--dim); }
-        .fingerprint:active { transform: scale(0.9); box-shadow: 0 0 40px var(--neon); }
+        /* Intro Authorization */
+        #auth-gate { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .core-btn { width: 90px; height: 90px; border: 2px solid var(--neon); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 20px var(--neon); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 10px var(--neon); transform: scale(1); } 50% { box-shadow: 0 0 40px var(--neon); transform: scale(1.05); } 100% { box-shadow: 0 0 10px var(--neon); transform: scale(1); } }
 
-        /* Main Dashboard */
-        .container { padding: 15px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; opacity: 0; transition: 1s opacity; }
-        .glitch { font-size: 1.5rem; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 10px; color: #fff; text-shadow: 2px 0 var(--pink), -2px 0 var(--neon); }
+        /* Main Interface */
+        .container { padding: 15px; display: none; opacity: 0; transition: 1s opacity; }
+        .glitch { font-size: 1.4rem; font-weight: bold; text-align: center; letter-spacing: 4px; text-shadow: 2px 0 var(--pink), -2px 0 #0ff; animation: glitch 3s infinite; }
+        @keyframes glitch { 0% { transform: skew(0deg); } 10% { transform: skew(3deg); } 20% { transform: skew(-3deg); } 100% { transform: skew(0deg); } }
 
-        #map { height: 150px; width: 100%; border: 1px solid #333; border-radius: 8px; margin-bottom: 10px; filter: invert(100%) hue-rotate(180deg) brightness(0.8); }
+        #map { height: 180px; border: 1px solid var(--neon); margin: 15px 0; filter: invert(1) hue-rotate(180deg) brightness(0.7); border-radius: 8px; }
+        .terminal { background: rgba(0,20,0,0.85); border: 1px solid #222; padding: 10px; font-size: 11px; height: 110px; overflow-y: auto; color: var(--neon); margin-bottom: 15px; }
         
-        .terminal-log { flex: 1; background: #000; border: 1px solid #222; padding: 10px; font-size: 11px; overflow-y: auto; margin-bottom: 10px; color: #00ff41; }
-        .data-card { background: rgba(15,15,15,0.95); border: 1px solid #333; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: none; animation: slideIn 0.5s forwards; }
-        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .card { background: rgba(10,10,10,0.9); border: 1px solid #333; padding: 12px; border-left: 4px solid var(--neon); margin-bottom: 12px; opacity: 0; transform: translateX(-20px); transition: 0.5s all; }
+        .card.active { opacity: 1; transform: translateX(0); }
 
-        .admin-btn { border: 1px solid var(--pink); color: var(--pink); padding: 5px; font-size: 10px; text-align: center; margin-top: 5px; cursor: pointer; }
+        /* Admin Console */
+        #admin-panel { border-color: var(--pink); border-left-color: var(--pink); display: none; margin-top: 20px; }
+        .admin-input { background: #000; color: var(--pink); border: 1px solid var(--pink); padding: 8px; width: 65%; font-family: monospace; }
+        .admin-btn { background: var(--pink); border: none; color: #000; padding: 8px 12px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
-<body class="flicker">
-    <div class="scanlines"></div>
+<body>
+    <div class="grid-bg"></div>
 
-    <div id="auth-screen">
-        <div class="glitch">SECURITY_CHECK</div>
-        <div class="fingerprint" onclick="startSequence()">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 11c0 3.517-2.167 6.524-5.222 7.738M12 11c0-3.517 2.167-6.524 5.222-7.738M12 11V3m0 8v18"/></svg>
+    <div id="auth-gate">
+        <div class="glitch" style="margin-bottom: 40px;">UPLINK_REQUIRED</div>
+        <div class="core-btn" onclick="engage()">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v10m6.36-5.36a9 9 0 1 1-12.73 0"/></svg>
         </div>
-        <p style="font-size: 10px; margin-top: 15px; letter-spacing: 2px;">TAP TO AUTHORIZE UPLINK</p>
+        <p style="margin-top: 30px; font-size: 10px; opacity: 0.7; letter-spacing: 3px;">TAP TO SYNC PHANTOM CORE</p>
     </div>
 
     <div class="container" id="main-ui">
-        <div class="glitch">ARCHON_OSINT_SUPREME</div>
-        
+        <div class="glitch">PHANTOM_CORE_V6</div>
         <div id="map"></div>
+        <div class="terminal" id="logs"></div>
+        <div id="results"></div>
 
-        <div class="terminal-log" id="logs">
-            > WAITING FOR HANDSHAKE...
-        </div>
-
-        <div id="results-area">
-            </div>
-
-        <div id="admin-module" style="display:none;">
-            <div class="admin-btn" onclick="toggleAdmin()">[ OPEN SECURITY OVERRIDE ]</div>
-            <div id="admin-panel" style="display:none; padding:10px; border: 1px solid var(--pink); margin-top:5px;">
-                <input type="number" id="new-id" placeholder="Telegram UserID" style="background:#000; color:var(--pink); border:1px solid var(--pink); width:70%;">
-                <button onclick="addAdmin()" style="background:var(--pink); border:none; color:#000; padding:5px;">GRANT</button>
-            </div>
+        <div class="card" id="admin-panel">
+            <h4 style="color:var(--pink); margin:0 0 10px 0;">[ SECURITY_OVERRIDE: ADD_ADMIN ]</h4>
+            <input type="number" id="new-admin" class="admin-input" placeholder="Telegram ID">
+            <button class="admin-btn" onclick="addAdmin()">GRANT</button>
+            <div id="admin-status" style="font-size:10px; margin-top:8px; color:var(--pink);"></div>
         </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp; tg.expand();
-        const p = new URLSearchParams(window.location.search);
-        const target = p.get('target'), type = p.get('type'), uid = p.get('uid');
+        const params = new URLSearchParams(window.location.search);
+        const target = params.get('target'), type = params.get('type'), uid = params.get('uid');
         const BACKEND = "https://archon-intelligence-backend.onrender.com";
-        const MASTER_ID = "8312795263"; // REPLACE WITH YOUR ID
+        const MASTER_ID = "8312795263"; // <--- MUST MATCH MASTER_ID IN PYTHON
 
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(f, d, t='sine') {
-            const o = ctx.createOscillator(); const g = ctx.createGain();
-            o.type = t; o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
-            g.gain.setValueAtTime(0.1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + d);
-            o.start(); o.stop(ctx.currentTime + d);
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(f, d, t='square') {
+            const o = audio.createOscillator(); const g = audio.createGain();
+            o.type = t; o.frequency.value = f; o.connect(g); g.connect(audio.destination);
+            g.gain.setValueAtTime(0.05, audio.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + d);
+            o.start(); o.stop(audio.currentTime + d);
         }
 
-        function log(msg, color="#00ff41") {
+        function log(m) {
             const l = document.getElementById('logs');
-            const d = document.createElement('div');
-            d.innerHTML = `> ${msg}`; d.style.color = color;
+            const d = document.createElement('div'); d.innerHTML = `> ${m}`;
             l.appendChild(d); l.scrollTop = l.scrollHeight;
-            playSound(800, 0.05);
+            playSfx(800, 0.05);
         }
 
-        async function startSequence() {
-            if(ctx.state === 'suspended') ctx.resume();
-            document.getElementById('auth-screen').style.display = 'none';
+        async function engage() {
+            if(audio.state === 'suspended') audio.resume();
+            document.getElementById('auth-gate').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'block';
             document.getElementById('main-ui').style.opacity = '1';
             
-            if(uid === MASTER_ID) document.getElementById('admin-module').style.display = 'block';
+            if(uid === MASTER_ID) document.getElementById('admin-panel').style.display = 'block';
 
-            log("HANDSHAKE ESTABLISHED.");
-            log(`TARGETING: ${target}`);
-            log(`PROTOCOL: ${type.toUpperCase()}_RECON`);
-
-            executeScan();
+            log("SYNCING WITH PHANTOM SATELLITES...");
+            log(`DECRYPTING PAYLOAD: ${target}`);
+            runScan();
         }
 
-        async function executeScan() {
+        async function runScan() {
             try {
-                const r = await fetch(`${BACKEND}/api/scan?target=${encodeURIComponent(target)}&type=${type}&uid=${uid}`);
-                const data = await r.json();
+                const response = await fetch(`${BACKEND}/api/scan?target=${encodeURIComponent(target)}&type=${type}&uid=${uid}`);
+                const data = await response.json();
 
-                if(data.error) { log(`CRITICAL ERROR: ${data.error}`, "red"); return; }
+                if(data.error) { log(`UPLINK ERROR: ${data.error}`); return; }
 
-                // Map Logic
-                let lat = data.geo?.area?.latitude || 0, lon = data.geo?.area?.longitude || 0;
-                let map = L.map('map', {zoomControl: false}).setView([lat, lon], 11);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                L.circle([lat, lon], {radius: 1000, color: '#00f3ff'}).addTo(map);
+                // Interactive Map Initialization
+                if(data.geo) {
+                    let lat = data.geo.lat || 0, lon = data.geo.lon || 0;
+                    let m = L.map('map', {zoomControl: false, attributionControl: false}).setView([lat, lon], 11);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+                    L.circle([lat, lon], {radius: 4000, color: '#00ff41'}).addTo(m);
+                    log(`LOCATION PINPOINTED: ${data.geo.city || 'GLOBAL'}`);
+                }
 
-                log("DECRYPTION SUCCESSFUL. PARSING PAYLOAD...");
-                renderData(data);
-            } catch(e) { log("CONNECTION LOST. RE-ROUTING...", "red"); }
+                renderCards(data);
+            } catch (e) { log("CRITICAL: CONNECTION TIMEOUT."); }
         }
 
-        function renderData(data) {
-            const area = document.getElementById('results-area');
-            
-            // 1. Module: Social
+        function renderCards(data) {
+            const res = document.getElementById('results');
             if(data.social) {
-                const c = createCard("SOCIAL_INTEL");
-                c.innerHTML += `<div style="font-size:12px;">Reputation: ${data.social.reputation || 'N/A'}</div>`;
-                if(data.social.sources) c.innerHTML += `<div style="color:var(--neon); font-size:10px;">Links: ${data.social.sources.join(' | ')}</div>`;
-                area.appendChild(c);
+                let c = createCard("IDENTITY_RECON");
+                c.innerHTML += `REPUTATION: ${data.social.reputation || 'N/A'}<br>`;
+                if(data.social.sources) c.innerHTML += `<small>${data.social.sources.join(' | ')}</small>`;
+                res.appendChild(c); setTimeout(() => c.classList.add('active'), 200);
             }
-
-            // 2. Module: Breaches
             if(data.leaks && data.leaks.result) {
-                const c = createCard("DARK_WEB_EXPOSURE", "#ff3e3e");
-                data.leaks.result.slice(0,5).forEach(l => c.innerHTML += `<div style="font-size:10px;">[!] ${l.line}</div>`);
-                area.appendChild(c);
-                playSound(200, 0.5, 'square');
+                let c = createCard("BREACH_INTELLIGENCE", "#ff3e3e");
+                data.leaks.result.slice(0, 6).forEach(l => c.innerHTML += `<div style="font-size:10px;">[!] ${l.line}</div>`);
+                res.appendChild(c); setTimeout(() => c.classList.add('active'), 500);
+                playSfx(200, 0.4, 'sine');
             }
-
-            log("PAYLOAD FULLY RENDERED. STANDING BY.");
+            log("SCAN_PHASE: COMPLETE.");
         }
 
-        function createCard(title, border="#333") {
-            const d = document.createElement('div');
-            d.className = 'data-card'; d.style.display = 'block'; d.style.borderColor = border;
-            d.innerHTML = `<div style="font-size:11px; border-bottom:1px solid #222; margin-bottom:5px; color:${border==='#333'? 'var(--neon)' : border}">[ ${title} ]</div>`;
+        function createCard(title, color="#00ff41") {
+            const d = document.createElement('div'); d.className = 'card'; d.style.borderLeftColor = color;
+            d.innerHTML = `<h5 style="margin:0 0 8px 0; color:${color}">[ ${title} ]</h5>`;
             return d;
         }
 
-        // Admin Functions
-        function toggleAdmin() { const p = document.getElementById('admin-panel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; }
         async function addAdmin() {
-            const id = document.getElementById('new-id').value;
-            log(`AUTHORIZING USER_${id}...`);
-            const r = await fetch(`${BACKEND}/api/add_admin?uid=${uid}&new_id=${id}`);
+            const newId = document.getElementById('new-admin').value;
+            const status = document.getElementById('admin-status');
+            status.innerText = "> INITIATING GRANT...";
+            const r = await fetch(`${BACKEND}/api/add_admin?uid=${uid}&new_id=${newId}`);
             const d = await r.json();
-            log(d.status === "SUCCESS" ? "ACCESS GRANTED." : "AUTHORIZATION FAILED.", d.status === "SUCCESS" ? "#00ff41" : "red");
+            status.innerText = d.status === "SUCCESS" ? `> USER_${newId}_AUTHORIZED` : `> ERROR: ${d.error}`;
+            playSfx(1000, 0.2);
         }
     </script>
 </body>
