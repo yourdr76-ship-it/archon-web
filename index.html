@@ -40,7 +40,6 @@
         .core:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--neon); }
         @keyframes spin { 100% { transform:rotate(360deg); } }
         
-        /* Radar Element */
         .radar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--neon); position: relative; margin: 0 auto 10px auto; overflow: hidden; }
         .radar::before { content: ''; position: absolute; top: 50%; left: 50%; width: 50%; height: 50%; background: linear-gradient(45deg, transparent 50%, rgba(0,255,65,0.5) 100%); transform-origin: 0% 0%; animation: radar 2s linear infinite; }
         @keyframes radar { 100% { transform: rotate(360deg); } }
@@ -69,7 +68,6 @@
         const p = new URLSearchParams(window.location.search);
         const target = p.get('target'), type = p.get('type'), uid = p.get('uid');
         const BACKEND = "https://archon-intelligence-backend.onrender.com";
-        let ctxSound;
 
         // --- INTERACTIVE BACKGROUND (PARTICLE NETWORK) ---
         const canvas = document.getElementById('network-canvas');
@@ -96,18 +94,7 @@
         }
         initParticles(); animateParticles();
 
-        // --- SOUND ENGINE ---
-        function playSnd(f, d, t='square') {
-            if(!ctxSound) return;
-            try {
-                const o = ctxSound.createOscillator(); const g = ctxSound.createGain();
-                o.type = t; o.frequency.value = f; o.connect(g); g.connect(ctxSound.destination);
-                g.gain.setValueAtTime(0.05, ctxSound.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ctxSound.currentTime + d);
-                o.start(); o.stop(ctxSound.currentTime + d);
-            } catch(e) {}
-        }
-
-        // --- TYPING TERMINAL EFFECT ---
+        // --- TYPING TERMINAL EFFECT (NO AUDIO) ---
         async function typeLog(m, color="var(--neon)") {
             const l = document.getElementById('logs');
             const d = document.createElement('div'); d.style.color = color;
@@ -117,7 +104,6 @@
                 const int = setInterval(() => {
                     d.innerHTML = `> [SYS] ${m.substring(0, i)}<span style="opacity:0.5">_</span>`;
                     l.scrollTop = l.scrollHeight;
-                    if(i % 3 === 0) playSnd(1500, 0.02, 'sine');
                     if(i++ >= m.length) { clearInterval(int); d.innerHTML = `> [SYS] ${m}`; resolve(); }
                 }, 15);
             });
@@ -133,18 +119,17 @@
                     return chars[Math.floor(Math.random() * chars.length)];
                 }).join("");
                 if(iterations >= finalString.length) clearInterval(interval);
-                iterations += 1/2; // Speed of decryption
+                iterations += 1/2; 
             }, 30);
         }
 
-        // --- COPY TO CLIPBOARD INTERACTION ---
+        // --- COPY TO CLIPBOARD INTERACTION (NO AUDIO) ---
         function copyData(element, value) {
             if(!value || value === 'N/A') return;
             navigator.clipboard.writeText(value);
             const originalHTML = element.innerHTML;
             element.innerHTML = `<span style="color:#000; width:100%; text-align:center; font-weight:bold;">[ DATA COPIED ]</span>`;
             element.style.background = "var(--neon)";
-            playSnd(800, 0.1); playSnd(1200, 0.1);
             setTimeout(() => { element.innerHTML = originalHTML; element.style.background = ""; }, 800);
         }
 
@@ -157,8 +142,7 @@
         }
 
         async function initiateSequence() {
-            try { if(!ctxSound) ctxSound = new (window.AudioContext || window.webkitAudioContext)(); if(ctxSound.state === 'suspended') ctxSound.resume(); } catch(e) {}
-            
+            // Instantly remove auth screen
             document.getElementById('auth').style.opacity = '0';
             setTimeout(() => { document.getElementById('auth').style.display = 'none'; }, 500);
             
@@ -188,11 +172,14 @@
                 } else if (type === 'username') {
                     m1.appendChild(buildRow('GITHUB', data.accounts?.GitHub));
                     m1.appendChild(buildRow('REDDIT', data.accounts?.Reddit));
+                } else if (type === 'ip') {
+                    m1.appendChild(buildRow('ISP', data.network?.isp));
+                    m1.appendChild(buildRow('CITY', data.network?.city));
                 }
                 db.appendChild(m1);
                 
                 setTimeout(() => { 
-                    m1.classList.add('show'); playSnd(400, 0.2);
+                    m1.classList.add('show'); 
                     m1.querySelectorAll('.decrypt-target').forEach(el => decryptText(el, el.getAttribute('data-val')));
                 }, 300);
 
@@ -211,7 +198,7 @@
                 }
                 db.appendChild(m2);
                 setTimeout(() => { 
-                    m2.classList.add('show'); playSnd(300, 0.2, 'sawtooth');
+                    m2.classList.add('show');
                     m2.querySelectorAll('.decrypt-target').forEach(el => decryptText(el, el.getAttribute('data-val')));
                 }, 800);
 
@@ -221,7 +208,7 @@
                 m3.innerHTML += `<div class="btn" onclick="window.open('https://www.google.com/search?q=%22${data.target}%22')">GLOBAL_SCRAPE_OVERRIDE</div>`;
                 m3.innerHTML += `<div class="btn" style="border-color:var(--danger); color:var(--danger);" onclick="if(tg) tg.close()">GENERATE_TRAP_LINK</div>`;
                 db.appendChild(m3);
-                setTimeout(() => { m3.classList.add('show'); playSnd(500, 0.1); }, 1300);
+                setTimeout(() => { m3.classList.add('show'); }, 1300);
 
                 await typeLog("DATA STREAM DECRYPTED AND SECURED.");
 
