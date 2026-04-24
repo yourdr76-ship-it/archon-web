@@ -2,139 +2,126 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archon v8: Quantum Void</title>
+    <title>Archon V11: OMNI-NET</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        :root { --neon: #00ff41; --danger: #ff1111; --bg: #000; --dim: rgba(0, 255, 65, 0.15); }
-        body, html { margin:0; padding:0; background:var(--bg); color:var(--neon); font-family:'Courier New', monospace; height:100%; overflow:hidden; }
+        :root { --neon: #00ff41; --danger: #ff003c; --bg: #020202; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--neon); font-family:'Courier New', monospace; overflow-x:hidden; }
         
-        /* Matrix Rain Background */
-        #matrix { position:fixed; top:0; left:0; z-index:-1; opacity:0.25; }
+        .scanlines { position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.2) 50%); background-size:100% 4px; pointer-events:none; z-index:100; }
         
-        .header { border-bottom:1px solid var(--neon); padding:15px; text-align:center; background:rgba(0,0,0,0.85); position: relative; z-index: 10; }
-        .glitch { font-size:1.3rem; font-weight:bold; letter-spacing:4px; text-shadow:2px 0 red, -2px 0 blue; animation: glitch-anim 2s infinite; }
-        @keyframes glitch-anim { 0% { opacity:1; transform: skew(0); } 50% { opacity:0.8; transform: skew(3deg); } 100% { opacity:1; transform: skew(0); } }
+        .header { text-align:center; padding:20px; border-bottom:1px solid #222; background:rgba(5,5,5,0.9); box-shadow: 0 0 20px rgba(0,255,65,0.05); }
+        .glitch { font-size:1.5rem; font-weight:bold; letter-spacing:4px; text-shadow:2px 0 red, -2px 0 blue; animation: g 3s infinite; }
+        @keyframes g { 0%, 100% { transform:skew(0); opacity:1; } 5% { transform:skew(-10deg); opacity:0.8; } 10% { transform:skew(10deg); } }
 
-        #map { height:180px; border:1px solid #333; margin:10px; filter:invert(1) hue-rotate(180deg) brightness(0.65); border-radius:10px; box-shadow: 0 0 15px var(--dim); }
-        .terminal { background:rgba(0,10,0,0.92); padding:12px; font-size:11px; height:110px; overflow-y:auto; border:1px solid #222; margin: 0 10px; border-radius: 5px; }
+        .terminal { background:#050505; border:1px solid #111; margin:15px; padding:15px; font-size:11px; height:100px; overflow-y:auto; color:#00ff41; box-shadow: inset 0 0 10px #000; }
         
-        .card { background:rgba(15,15,15,0.95); border:1px solid #333; padding:15px; border-left:4px solid var(--neon); margin:15px 10px; transform:translateX(-30px); opacity:0; transition:0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .card.active { transform:translateX(0); opacity:1; }
+        .module { background:#0a0a0a; border:1px solid #1a1a1a; border-left:3px solid var(--neon); margin:15px; padding:15px; opacity:0; transform:translateX(-20px); transition:0.5s; position: relative; overflow: hidden;}
+        .module::before { content:""; position:absolute; top:0; left:-100%; width:50%; height:100%; background:linear-gradient(90deg, transparent, rgba(0,255,65,0.1), transparent); animation: sweep 3s infinite; }
+        @keyframes sweep { 100% { left:200%; } }
+        .module.show { opacity:1; transform:translateX(0); }
         
-        .btn { border:1px solid var(--neon); padding:12px; text-align:center; margin:15px 10px; cursor:pointer; font-size:12px; font-weight: bold; transition: 0.3s; }
-        .btn:active { background:var(--neon); color:#000; box-shadow: 0 0 20px var(--neon); }
+        .data-row { border-bottom:1px dashed #222; padding:8px 0; font-size:12px; display:flex; justify-content:space-between; }
+        .lbl { color:#666; font-weight: bold;}
 
-        #auth-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-        .core { width:90px; height:90px; border:2px solid var(--neon); border-radius:50%; animation: pulse 1.5s infinite; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 15px var(--neon); }
-        @keyframes pulse { 0% { box-shadow:0 0 5px var(--neon); transform: scale(1); } 50% { box-shadow:0 0 35px var(--neon); transform: scale(1.05); } 100% { box-shadow:0 0 5px var(--neon); transform: scale(1); } }
+        .profile-pic { width: 90px; height: 90px; border-radius: 4px; border: 1px solid var(--neon); display: block; margin: 10px auto; filter: contrast(1.2) grayscale(0.2); }
+
+        .btn { display:block; text-align:center; border:1px solid var(--neon); padding:12px; margin-top:15px; color:var(--neon); font-size:12px; cursor:pointer; font-weight:bold; background: rgba(0,255,65,0.05);}
+        .btn:active { background:var(--neon); color:#000; }
+        
+        #auth { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; }
+        .core { width:80px; height:80px; border:2px dashed var(--neon); border-radius:50%; display:flex; align-items:center; justify-content:center; animation:spin 5s linear infinite; cursor: pointer;}
+        @keyframes spin { 100% { transform:rotate(360deg); } }
     </style>
 </head>
-<body>
-    <canvas id="matrix"></canvas>
+<body class="scanlines">
 
-    <div id="auth-overlay" onclick="startSystem()">
-        <div class="glitch">ARCHON_V8</div>
-        <div class="core">SYNC</div>
-        <p style="margin-top:25px; font-size:10px; letter-spacing:4px; opacity: 0.7;">INITIALIZE QUANTUM UPLINK</p>
+    <div id="auth" onclick="start()">
+        <div class="glitch" style="margin-bottom:40px;">OMNI_NET_V11</div>
+        <div class="core"><div style="width:20px; height:20px; background:var(--neon); border-radius:50%; box-shadow: 0 0 20px var(--neon);"></div></div>
+        <div style="font-size:10px; margin-top:30px; letter-spacing:4px; opacity:0.7;">AUTHORIZE UPLINK</div>
     </div>
 
     <div class="header">
-        <div class="glitch">ARCHON_INTELLIGENCE</div>
-        <div style="font-size:9px; opacity:0.6; margin-top:5px;">STATUS: SECURE | NODE: SUPREME</div>
+        <div class="glitch">ARCHON_OMNI_NET</div>
+        <div style="font-size:9px; color:#555; margin-top:8px; letter-spacing: 2px;">PROTOCOL: ACTIVE_RECON</div>
     </div>
 
-    <div id="map"></div>
     <div class="terminal" id="logs"></div>
-    <div id="payload-container"></div>
+    <div id="dashboard"></div>
 
     <script>
-        // --- ANIMATION: MATRIX RAIN ---
-        const c = document.getElementById('matrix'), ctx = c.getContext('2d');
-        c.width = window.innerWidth; c.height = window.innerHeight;
-        const columns = Math.floor(c.width / 20);
-        const drops = Array(columns).fill(0);
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(0,0,c.width,c.height);
-            ctx.fillStyle = '#0F0'; ctx.font = '15px monospace';
-            drops.forEach((y, i) => {
-                const text = String.fromCharCode(0x30A0 + Math.random() * 96);
-                ctx.fillText(text, i * 20, y);
-                if(y > c.height && Math.random() > 0.975) drops[i] = 0;
-                drops[i] += 20;
-            });
-        }
-        setInterval(drawMatrix, 50);
-
         let tg = window.Telegram.WebApp; tg.expand();
         const p = new URLSearchParams(window.location.search);
         const target = p.get('target'), type = p.get('type'), uid = p.get('uid');
         const BACKEND = "https://archon-intelligence-backend.onrender.com";
 
-        const audio = new (window.AudioContext || window.webkitAudioContext)();
-        function beep(f, d) {
-            const o = audio.createOscillator(); const g = audio.createGain();
-            o.type = 'square'; o.frequency.value = f; o.connect(g); g.connect(audio.destination);
-            g.gain.setValueAtTime(0.05, audio.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + d);
-            o.start(); o.stop(audio.currentTime + d);
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSnd(f, d) {
+            const o = ctx.createOscillator(); const g = ctx.createGain();
+            o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+            g.gain.setValueAtTime(0.1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + d);
+            o.start(); o.stop(ctx.currentTime + d);
         }
 
         function log(m) {
             const l = document.getElementById('logs');
-            const d = document.createElement('div'); d.innerHTML = `> ${m}`;
-            l.appendChild(d); l.scrollTop = l.scrollHeight;
-            beep(900, 0.05);
+            l.innerHTML += `<div>> [SYS] ${m}</div>`; l.scrollTop = l.scrollHeight;
+            playSnd(1200, 0.05);
         }
 
-        async function startSystem() {
-            if(audio.state === 'suspended') audio.resume();
-            document.getElementById('auth-overlay').style.display = 'none';
-            log("UPLINK ESTABLISHED.");
-            log(`DECRYPTING PAYLOAD: ${target}`);
-            
+        async function start() {
+            if(ctx.state === 'suspended') ctx.resume();
+            document.getElementById('auth').style.display = 'none';
+            log(`ESTABLISHING SECURE CONNECTION...`);
+            log(`TARGET ACQUIRED: ${target}`);
+
             try {
                 const res = await fetch(`${BACKEND}/api/scan?target=${encodeURIComponent(target)}&type=${type}&uid=${uid}`);
                 const data = await res.json();
+                const db = document.getElementById('dashboard');
+
+                // 1. IDENTITY MODULE
+                let m1 = document.createElement('div'); m1.className = 'module';
+                m1.innerHTML = `<h4 style="margin:0 0 10px 0; color:var(--neon)">[ IDENTITY_RECON ]</h4>`;
                 
-                // Interactive Map Initialization
-                let lat = data.geo?.lat || 20, lon = data.geo?.lon || 77;
-                let map = L.map('map', {zoomControl: false, attributionControl: false}).setView([lat, lon], 10);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                L.circle([lat, lon], {radius: 4000, color: '#00ff41', fillOpacity: 0.1}).addTo(map);
-
-                log("PAYLOAD EXTRACTED. RENDERING DATA PANELS...");
-                const out = document.getElementById('payload-container');
-
-                // Panel 1: Registry Data (Now Auto-Fixed)
-                let c1 = createCard("NETWORK_REGISTRY");
-                c1.innerHTML += `TARGET: ${data.target}<br>`;
-                c1.innerHTML += `REGION: ${data.registry?.loc || data.geo?.city || 'UNKNOWN'}<br>`;
-                c1.innerHTML += `CARRIER: ${data.registry?.car || data.geo?.isp || 'PROTECTED'}`;
-                out.appendChild(c1); setTimeout(() => c1.classList.add('active'), 200);
-
-                // Panel 2: Breach Alerts
-                if(data.leaks && data.leaks.result && data.leaks.result.length > 0) {
-                    let c2 = createCard("BREACH_INTELLIGENCE", "var(--danger)");
-                    data.leaks.result.slice(0, 5).forEach(l => c2.innerHTML += `<div style="font-size:10px; border-bottom:1px solid #222; padding:3px 0;">[!] ${l.line}</div>`);
-                    out.appendChild(c2); setTimeout(() => c2.classList.add('active'), 500);
-                    beep(200, 0.5);
-                } else {
-                    log("ZERO LEAKS DETECTED IN PUBLIC REPOSITORIES.");
+                if(type === 'email') {
+                    m1.innerHTML += `<img src="${data.avatar}" class="profile-pic" onerror="this.style.display='none'">`;
+                    if(data.social) m1.innerHTML += `<div class="data-row"><span class="lbl">REPUTATION:</span><span>${data.social.reputation || 'N/A'}</span></div>`;
+                    if(data.dns && data.dns.length > 0) m1.innerHTML += `<div class="data-row"><span class="lbl">MX SERVER:</span><span style="font-size:10px;">${data.dns[0].data}</span></div>`;
+                } else if (type === 'phone') {
+                    m1.innerHTML += `<div class="data-row"><span class="lbl">REGION:</span><span>${data.network?.location || 'Unknown'}</span></div>`;
+                    m1.innerHTML += `<div class="data-row"><span class="lbl">CARRIER NODE:</span><span>${data.network?.carrier || 'Unregistered'}</span></div>`;
+                } else if (type === 'ip') {
+                    m1.innerHTML += `<div class="data-row"><span class="lbl">ISP/ASN:</span><span>${data.network?.isp || 'Unknown'}</span></div>`;
+                    m1.innerHTML += `<div class="data-row"><span class="lbl">CITY:</span><span>${data.network?.city || 'Unknown'}</span></div>`;
+                } else if (type === 'username') {
+                    m1.innerHTML += `<div class="data-row"><span class="lbl">GITHUB:</span><span style="color:${data.accounts?.GitHub === 'FOUND' ? 'var(--neon)' : '#555'}">${data.accounts?.GitHub}</span></div>`;
+                    m1.innerHTML += `<div class="data-row"><span class="lbl">REDDIT:</span><span style="color:${data.accounts?.Reddit === 'FOUND' ? 'var(--neon)' : '#555'}">${data.accounts?.Reddit}</span></div>`;
                 }
+                db.appendChild(m1); setTimeout(() => m1.classList.add('show'), 200);
 
-                // Panel 3: Global Search Override
-                let c3 = createCard("WEB_SCRAPE_OVERRIDE");
-                c3.innerHTML += `<div class="btn" onclick="window.open('https://www.google.com/search?q=%22${data.target}%22')">INITIATE DEEP SEARCH</div>`;
-                out.appendChild(c3); setTimeout(() => c3.classList.add('active'), 800);
+                // 2. BREACH MODULE
+                let m2 = document.createElement('div'); m2.className = 'module'; m2.style.borderLeftColor = 'var(--danger)';
+                m2.innerHTML = `<h4 style="margin:0 0 10px 0; color:var(--danger)">[ DARK_WEB_EXPOSURE ]</h4>`;
+                if(data.leaks && data.leaks.result && data.leaks.result.length > 0) {
+                    data.leaks.result.slice(0,6).forEach(l => m2.innerHTML += `<div style="font-size:10px; margin-top:5px; padding-bottom:5px; border-bottom:1px solid #222;">[!] ${l.line}</div>`);
+                    playSnd(200, 0.5);
+                } else {
+                    m2.innerHTML += `<div style="font-size:11px; color:#555;">> NO EXPOSURES DETECTED IN KNOWN REPOSITORIES.</div>`;
+                }
+                db.appendChild(m2); setTimeout(() => m2.classList.add('show'), 400);
 
-            } catch(e) { log("CRITICAL: UPLINK OFFLINE."); }
-        }
+                // 3. THE TRAP / DORK MODULE
+                let m3 = document.createElement('div'); m3.className = 'module';
+                m3.innerHTML = `<h4 style="margin:0 0 5px 0; color:var(--neon)">[ ACTIVE_RECON_OPTIONS ]</h4>`;
+                m3.innerHTML += `<div style="font-size:10px; color:#777; margin-bottom:10px;">Deploy active counter-measures.</div>`;
+                m3.innerHTML += `<div class="btn" onclick="window.open('https://www.google.com/search?q=%22${data.target}%22')">GLOBAL_SEARCH_OVERRIDE</div>`;
+                m3.innerHTML += `<div class="btn" style="border-color:var(--danger); color:var(--danger);" onclick="tg.close()">GENERATE_TRAP_LINK (VIA BOT)</div>`;
+                db.appendChild(m3); setTimeout(() => m3.classList.add('show'), 600);
 
-        function createCard(t, c="var(--neon)") {
-            const d = document.createElement('div'); d.className = 'card'; d.style.borderLeftColor = c;
-            d.innerHTML = `<h5 style="margin:0 0 10px 0; color:${c}">[ ${t} ]</h5>`;
-            return d;
+                log("DATA STREAM SECURED.");
+            } catch(e) { log("CRITICAL: UPLINK FAILED.", "red"); }
         }
     </script>
 </body>
