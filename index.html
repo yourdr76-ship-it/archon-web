@@ -14,11 +14,14 @@
         #status-bar { font-size: 10px; color: var(--neon); letter-spacing: 2px; margin-bottom: 10px; }
         .target-display { font-size: 24px; margin: 10px 0; font-weight: bold; border-bottom: 1px solid rgba(0,255,204,0.3); padding-bottom: 10px; }
         .cluster { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .proto-btn { background: rgba(0, 255, 204, 0.05); border: 1px solid var(--neon); color: var(--neon); padding: 20px; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-align: left; clip-path: polygon(0% 0%, 92% 0%, 100% 25%, 100% 100%, 0% 100%); }
-        #stream { flex-grow: 1; overflow-y: auto; margin-top: 20px; scrollbar-width: none; }
-        .card { background: var(--glass); border-left: 4px solid var(--neon); padding: 20px; margin-bottom: 15px; }
+        .proto-btn { background: rgba(0, 255, 204, 0.05); border: 1px solid var(--neon); color: var(--neon); padding: 20px; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-align: left; clip-path: polygon(0% 0%, 92% 0%, 100% 25%, 100% 100%, 0% 100%); transition: 0.3s; }
+        .proto-btn:active { background: var(--neon); color: #000; }
+        
+        #stream { flex-grow: 1; overflow-y: auto; margin-top: 20px; scrollbar-width: none; padding-bottom: 50px; }
+        .card { background: var(--glass); border-left: 4px solid var(--neon); padding: 20px; margin-bottom: 15px; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         .row { display: flex; justify-content: space-between; font-size: 12px; padding: 8px 0; border-bottom: 1px dashed rgba(0, 255, 204, 0.15); }
-        .val { color: var(--neon); font-weight: bold; }
+        .val { color: var(--neon); font-weight: bold; text-align: right; max-width: 60%; word-wrap: break-word; }
     </style>
 </head>
 <body>
@@ -27,8 +30,8 @@
         <div id="status-bar">UPLINK_STATUS: READY</div>
         <div class="target-display" id="target-id">TARGET: ---</div>
         <div class="cluster">
-            <button class="proto-btn" onclick="initializeRip()">INITIALIZE CHAIN RIP</button>
-            <button class="proto-btn" onclick="location.reload()">RESET NODE</button>
+            <button class="proto-btn" onclick="initializeOmniChain()">INITIALIZE OMNI-CHAIN</button>
+            <button class="proto-btn" onclick="location.reload()">RESET SYSTEM</button>
         </div>
         <div id="stream"></div>
     </div>
@@ -41,18 +44,17 @@
         const BACKEND = "https://archon-intelligence-backend.onrender.com";
         document.getElementById('target-id').innerText = target || "IDLE";
 
-        async function initializeRip() {
-            document.getElementById('status-bar').innerText = "UPLINK_STATUS: INITIATING CHAIN REACTION...";
+        async function initializeOmniChain() {
+            document.getElementById('status-bar').innerText = "UPLINK_STATUS: INITIATING 15-NODE EXTRACTION...";
             document.getElementById('status-bar').style.color = "#ffaa00";
-            let proto = target.includes('@') ? "email" : (target.match(/\d+\./) ? "ip" : "username");
             
-            // Start the recursive loop
-            executeRecursiveRip(target, proto);
+            // The magic: Starts at "initial" regardless of what data you gave it.
+            executeRecursiveRip(target, "initial");
         }
 
         async function executeRecursiveRip(node, proto) {
             document.body.classList.add('ripping'); 
-            coreSpeed = 0.2; // Spin the core fast while scanning
+            coreSpeed = 0.25; // High speed spin during multi-chain
 
             try {
                 const res = await fetch(`${BACKEND}/api/scan?target=${node}&protocol=${proto}&v=${Date.now()}`);
@@ -60,30 +62,28 @@
                 
                 const data = await res.json();
                 
-                document.getElementById('status-bar').innerText = `UPLINK_STATUS: ${proto.toUpperCase()} NODE SECURED`;
+                document.getElementById('status-bar').innerText = `UPLINK_STATUS: [${proto.toUpperCase()}] SECURED`;
                 document.getElementById('status-bar').style.color = "#00ffcc";
                 renderCard(proto.toUpperCase(), data);
 
-                // --- ⛓️ AUTOMATIC CHAIN SCANNING LOGIC ---
+                // --- ⛓️ 15-STAGE CHAIN REACTION LOGIC ---
                 if(data.pivots && data.pivots.length > 0) {
-                    document.getElementById('status-bar').innerText = "UPLINK_STATUS: PIVOTING TO NEW TARGET...";
                     data.pivots.forEach(piv => {
-                        // Wait 3 seconds, then automatically scan the next piece of data
-                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 3000);
+                        // 2.5 second delay between hacks so it looks incredible on screen
+                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 2500);
                     });
                 } else {
-                    // End of the chain
                     setTimeout(() => { 
                         document.body.classList.remove('ripping'); 
                         coreSpeed = 0.005; 
-                        document.getElementById('status-bar').innerText = "UPLINK_STATUS: SINGULARITY COMPLETE";
+                        document.getElementById('status-bar').innerText = "UPLINK_STATUS: OMNI-CHAIN COMPLETE";
                     }, 2000);
                 }
 
             } catch (e) { 
                 document.body.classList.remove('ripping');
                 coreSpeed = 0.005;
-                document.getElementById('status-bar').innerText = "UPLINK_STATUS: FAILED";
+                document.getElementById('status-bar').innerText = "UPLINK_STATUS: SEQUENCE BROKEN";
                 document.getElementById('status-bar').style.color = "#ff3333";
             }
         }
@@ -95,11 +95,14 @@
             if(data && data.analysis) {
                 Object.entries(data.analysis).forEach(([k, v]) => {
                     const row = document.createElement('div'); row.className = 'row';
-                    row.innerHTML = `<span>${k.toUpperCase()}</span><span class="val">${v}</span>`;
+                    row.innerHTML = `<span>${k.replace(/_/g, ' ')}</span><span class="val">${v}</span>`;
                     card.appendChild(row);
                 });
             }
-            document.getElementById('stream').prepend(card);
+            
+            const stream = document.getElementById('stream');
+            stream.appendChild(card); // Appends to bottom to create a timeline effect
+            stream.scrollTop = stream.scrollHeight; // Auto-scrolls down
         }
 
         let coreSpeed = 0.005;
