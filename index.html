@@ -2,155 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ARCHON COMMAND</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        :root { 
-            --neon: #00ffcc; 
-            --bg: var(--tg-theme-bg-color, #000); 
-            --text: var(--tg-theme-text-color, #fff);
-            --glass: rgba(0, 15, 10, 0.95); 
-        }
-        
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin:0; background:var(--bg); color:var(--text); font-family:monospace; overflow:hidden; height: 100vh; width: 100vw; }
-        
-        /* 3D Visualizer - Fixed to Background */
-        #canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:1; opacity:0.4; pointer-events: none;}
-        
-        .interface { 
-            position: relative; z-index: 10; padding: 20px; height: 100vh; 
-            display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; /* Centers app on Tablets */
-        }
-
-        /* Responsive Cluster */
-        .cluster { 
-            display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; 
-            margin-top: 15px; 
-        }
-        
-        /* Tablet Optimization: Two columns if screen is wide */
-        @media (min-width: 600px) {
-            .cluster { grid-template-columns: 1fr 1fr; }
-            .interface { padding: 40px; }
-        }
-
+        :root { --neon: #00ffcc; --bg: #000; --glass: rgba(0, 10, 5, 0.95); }
+        body { margin:0; background:var(--bg); color:#fff; font-family:monospace; overflow:hidden; }
+        #canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:1; opacity:0.3;}
+        .interface { position: relative; z-index: 10; padding: 20px; height: 100vh; display: flex; flex-direction: column; max-width: 900px; margin: 0 auto; }
+        .cluster { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .proto-btn { 
-            background: var(--tg-theme-button-color, rgba(0, 255, 204, 0.1)); 
-            border: 1px solid var(--neon); 
-            color: var(--tg-theme-button-text-color, var(--neon));
-            padding: 16px; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-align: left;
-            clip-path: polygon(0% 0%, 92% 0%, 100% 25%, 100% 100%, 0% 100%);
-            transition: transform 0.1s;
+            background: rgba(0, 255, 204, 0.1); border: 1px solid var(--neon); color: var(--neon);
+            padding: 15px; font-size: 10px; letter-spacing: 2px; cursor: pointer; text-align: left;
+            clip-path: polygon(0% 0%, 90% 0%, 100% 30%, 100% 100%, 0% 100%);
         }
-        .proto-btn:active { transform: scale(0.98); background: var(--neon); color: #000; }
-
-        #stream { flex-grow: 1; overflow-y: auto; margin-top: 20px; scrollbar-width: none; }
-        #stream::-webkit-scrollbar { display: none; }
-
-        .card { 
-            background: var(--glass); border-left: 4px solid var(--neon); padding: 20px; 
-            margin-bottom: 12px; animation: slideIn 0.4s ease-out forwards; 
-        }
+        #stream { flex-grow: 1; overflow-y: auto; margin-top: 15px; scrollbar-width: none; }
+        .card { background: var(--glass); border-left: 4px solid var(--neon); padding: 20px; margin-bottom: 10px; animation: slideIn 0.4s forwards; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .row { display: flex; justify-content: space-between; font-size: 12px; padding: 8px 0; border-bottom: 1px solid rgba(0, 255, 204, 0.1); }
-        .val { color: var(--neon); font-weight: bold; word-break: break-all; text-align: right; margin-left: 10px; }
-
-        .access-panel { 
-            border: 1px solid #ff3333; padding: 15px; margin-top: auto; 
-            margin-bottom: 20px; background: rgba(255,0,0,0.05); text-align: center;
-        }
+        .row { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 0; border-bottom: 1px solid rgba(0, 255, 204, 0.1); }
+        .val { color: var(--neon); font-weight: bold; text-align: right; }
     </style>
 </head>
 <body>
     <div id="canvas"></div>
     <div class="interface">
-        <div style="letter-spacing:8px; color:var(--neon); font-size:10px; font-weight:900; opacity: 0.8;">ARCHON INTELLIGENCE SYSTEM</div>
-        <div id="target-id" style="font-size:24px; margin: 15px 0; font-weight: bold;">TARGET: NULL_NODE</div>
-
+        <div style="letter-spacing:10px; color:var(--neon); font-size:10px; font-weight:900;">ARCHON INTELLIGENCE</div>
+        <div id="target-id" style="font-size:22px; margin: 10px 0;">TARGET: LOADING...</div>
         <div class="cluster">
             <button class="proto-btn" onclick="trigger('ip')">NETWORK INTERCEPT</button>
-            <button class="proto-btn" onclick="trigger('gstin')">FINANCIAL PIVOT</button>
             <button class="proto-btn" onclick="trigger('email')">IDENTITY CASCADE</button>
+            <button class="proto-btn" onclick="trigger('gstin')">FINANCIAL PIVOT</button>
             <button class="proto-btn" onclick="trigger('vahan')">ASSET ANALYSIS</button>
         </div>
-
         <div id="stream"></div>
-
-        <div class="access-panel" id="access-box">
-            <div id="access-btn" onclick="grantAccess()" style="color: #ff3333; cursor: pointer; font-size: 11px; font-weight: bold; letter-spacing: 1px;">
-                [ ESTABLISH SECURE UPLINK ]
-            </div>
+        <div id="access-box" onclick="grantAccess()" style="border: 1px solid #ff3333; padding: 15px; text-align: center; color: #ff3333; cursor: pointer; font-size: 10px; margin-top: 10px;">
+            [ ESTABLISH SECURE UPLINK ]
         </div>
     </div>
-
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Forces full height on both Phone and Tablet
-        tg.ready();
-
-        const params = new URLSearchParams(window.location.search);
-        const target = params.get('target');
-        const BACKEND = "https://archon-intelligence-backend.onrender.com"; 
-        
-        document.getElementById('target-id').innerText = target || "IDLE_STANDBY";
+        const tg = window.Telegram.WebApp; tg.expand();
+        const p = new URLSearchParams(window.location.search);
+        const target = p.get('target');
+        const BACKEND = "https://archon-intelligence-backend.onrender.com";
+        document.getElementById('target-id').innerText = target;
 
         function grantAccess() {
             window.authorized = true;
             document.getElementById('access-box').style.borderColor = "#00ffcc";
-            document.getElementById('access-box').style.background = "rgba(0, 255, 204, 0.05)";
-            document.getElementById('access-box').innerHTML = "<div style='color:#00ffcc; font-size:11px; font-weight:bold;'>UPLINK STATUS: SECURE</div>";
+            document.getElementById('access-box').innerHTML = "<div style='color:#00ffcc'>UPLINK: SECURE</div>";
             tg.HapticFeedback.notificationOccurred('success');
-            speak("Access granted. Archon Intelligence is synchronized.");
         }
 
         async function trigger(protocol) {
-            if(!window.authorized) return tg.showAlert("Manual Access Required: Establish Uplink.");
-            
+            if(!window.authorized) return tg.showAlert("Manual Access Required.");
             try {
                 const res = await fetch(`${BACKEND}/api/scan?target=${target}&protocol=${protocol}`);
                 const data = await res.json();
                 render(protocol.toUpperCase(), data);
-            } catch (e) {
-                tg.showAlert("Uplink Error: Server Unreachable.");
-            }
+            } catch (e) { tg.showAlert("Uplink Timeout."); }
         }
 
         function render(title, content) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            let html = `<div style="color:var(--neon); font-size:10px; margin-bottom:10px; letter-spacing:2px;">[ ${title}_SYNTHESIS ]</div>`;
+            const card = document.createElement('div'); card.className = 'card';
+            let html = `<div style="color:var(--neon); font-size:9px; margin-bottom:8px;">[ ${title}_CASCADE ]</div>`;
             for(let [k, v] of Object.entries(content)) {
-                let displayVal = typeof v === 'object' ? 'DATA_LOCKED' : v;
-                html += `<div class="row"><span>${k.toUpperCase()}</span><span class="val">${displayVal}</span></div>`;
+                html += `<div class="row"><span>${k.toUpperCase()}</span><span class="val">${v}</span></div>`;
             }
-            card.innerHTML = html;
-            document.getElementById('stream').prepend(card);
+            card.innerHTML = html; document.getElementById('stream').prepend(card);
             tg.HapticFeedback.impactOccurred('medium');
         }
 
-        function speak(t) { const u = new SpeechSynthesisUtterance(t); u.rate = 1.1; window.speechSynthesis.speak(u); }
-
-        // --- 🧊 THREE.JS RESPONSIVE CORE ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('canvas').appendChild(renderer.domElement);
-        
         const core = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 1), new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true }));
         scene.add(core); camera.position.z = 5;
-
-        // Handles Tablet Rotation and Window Resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
         function animate() { requestAnimationFrame(animate); core.rotation.y += 0.005; renderer.render(scene, camera); }
         animate();
     </script>
