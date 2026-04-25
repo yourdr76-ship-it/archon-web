@@ -27,7 +27,7 @@
         <div id="status-bar">UPLINK_STATUS: READY</div>
         <div class="target-display" id="target-id">TARGET: ---</div>
         <div class="cluster">
-            <button class="proto-btn" onclick="initializeRip()">INITIALIZE RIP</button>
+            <button class="proto-btn" onclick="initializeRip()">INITIALIZE CHAIN RIP</button>
             <button class="proto-btn" onclick="location.reload()">RESET NODE</button>
         </div>
         <div id="stream"></div>
@@ -42,24 +42,49 @@
         document.getElementById('target-id').innerText = target || "IDLE";
 
         async function initializeRip() {
-            document.getElementById('status-bar').innerText = "UPLINK_STATUS: FETCHING DATA (Wait up to 60s)...";
+            document.getElementById('status-bar').innerText = "UPLINK_STATUS: INITIATING CHAIN REACTION...";
             document.getElementById('status-bar').style.color = "#ffaa00";
             let proto = target.includes('@') ? "email" : (target.match(/\d+\./) ? "ip" : "username");
+            
+            // Start the recursive loop
+            executeRecursiveRip(target, proto);
+        }
+
+        async function executeRecursiveRip(node, proto) {
+            document.body.classList.add('ripping'); 
+            coreSpeed = 0.2; // Spin the core fast while scanning
 
             try {
-                // Pure, simple fetch. No voice. No bullshit.
-                const res = await fetch(`${BACKEND}/api/scan?target=${target}&protocol=${proto}&v=${Date.now()}`);
+                const res = await fetch(`${BACKEND}/api/scan?target=${node}&protocol=${proto}&v=${Date.now()}`);
                 if(!res.ok) throw new Error(`HTTP ERROR: ${res.status}`);
                 
                 const data = await res.json();
                 
-                document.getElementById('status-bar').innerText = "UPLINK_STATUS: DATA_SECURED";
+                document.getElementById('status-bar').innerText = `UPLINK_STATUS: ${proto.toUpperCase()} NODE SECURED`;
                 document.getElementById('status-bar').style.color = "#00ffcc";
                 renderCard(proto.toUpperCase(), data);
+
+                // --- ⛓️ AUTOMATIC CHAIN SCANNING LOGIC ---
+                if(data.pivots && data.pivots.length > 0) {
+                    document.getElementById('status-bar').innerText = "UPLINK_STATUS: PIVOTING TO NEW TARGET...";
+                    data.pivots.forEach(piv => {
+                        // Wait 3 seconds, then automatically scan the next piece of data
+                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 3000);
+                    });
+                } else {
+                    // End of the chain
+                    setTimeout(() => { 
+                        document.body.classList.remove('ripping'); 
+                        coreSpeed = 0.005; 
+                        document.getElementById('status-bar').innerText = "UPLINK_STATUS: SINGULARITY COMPLETE";
+                    }, 2000);
+                }
+
             } catch (e) { 
-                document.getElementById('status-bar').innerText = "UPLINK_STATUS: FAILED. TAP TO RETRY.";
+                document.body.classList.remove('ripping');
+                coreSpeed = 0.005;
+                document.getElementById('status-bar').innerText = "UPLINK_STATUS: FAILED";
                 document.getElementById('status-bar').style.color = "#ff3333";
-                alert("If this failed, Render is currently booting up. Wait 45 seconds and tap Initialize Rip again. Error: " + e.message);
             }
         }
 
@@ -67,11 +92,13 @@
             const card = document.createElement('div'); card.className = 'card';
             card.innerHTML = `<div style="color:var(--neon); font-size:9px; margin-bottom:12px; letter-spacing:2px;">[ ${title}_ANALYSIS ]</div>`;
             
-            Object.entries(data.analysis).forEach(([k, v]) => {
-                const row = document.createElement('div'); row.className = 'row';
-                row.innerHTML = `<span>${k.toUpperCase()}</span><span class="val">${v}</span>`;
-                card.appendChild(row);
-            });
+            if(data && data.analysis) {
+                Object.entries(data.analysis).forEach(([k, v]) => {
+                    const row = document.createElement('div'); row.className = 'row';
+                    row.innerHTML = `<span>${k.toUpperCase()}</span><span class="val">${v}</span>`;
+                    card.appendChild(row);
+                });
+            }
             document.getElementById('stream').prepend(card);
         }
 
