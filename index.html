@@ -10,88 +10,56 @@
         :root { --neon: #00ffcc; --bg: #000; --glass: rgba(0, 10, 5, 0.98); }
         body { margin:0; background:var(--bg); color:#fff; font-family:monospace; overflow:hidden; height:100vh; }
         #canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:1; opacity:0.2; }
-        
         .interface { position: relative; z-index: 10; padding: 25px; height: 100vh; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; }
         #status-bar { font-size: 10px; color: var(--neon); letter-spacing: 2px; margin-bottom: 10px; }
         .target-display { font-size: 24px; margin: 10px 0; font-weight: bold; border-bottom: 1px solid rgba(0,255,204,0.3); padding-bottom: 10px; }
-
         .cluster { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .proto-btn { 
-            background: rgba(0, 255, 204, 0.05); border: 1px solid var(--neon); color: var(--neon);
-            padding: 20px; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-align: left;
-            clip-path: polygon(0% 0%, 92% 0%, 100% 25%, 100% 100%, 0% 100%); transition: 0.3s;
-        }
-        .proto-btn:active { background: var(--neon); color: #000; }
-
+        .proto-btn { background: rgba(0, 255, 204, 0.05); border: 1px solid var(--neon); color: var(--neon); padding: 20px; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-align: left; clip-path: polygon(0% 0%, 92% 0%, 100% 25%, 100% 100%, 0% 100%); }
         #stream { flex-grow: 1; overflow-y: auto; margin-top: 20px; scrollbar-width: none; }
-        .card { background: var(--glass); border-left: 4px solid var(--neon); padding: 20px; margin-bottom: 15px; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--glass); border-left: 4px solid var(--neon); padding: 20px; margin-bottom: 15px; }
         .row { display: flex; justify-content: space-between; font-size: 12px; padding: 8px 0; border-bottom: 1px dashed rgba(0, 255, 204, 0.15); }
         .val { color: var(--neon); font-weight: bold; }
-        
-        #noise { position:fixed; top:0; left:0; width:100%; height:100%; z-index:5; opacity:0; pointer-events:none; background: repeating-linear-gradient(0deg, rgba(0,255,204,0.05) 0px, transparent 1px); }
-        .ripping #noise { opacity: 0.4; animation: jitter 0.1s infinite; }
-        @keyframes jitter { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } }
     </style>
 </head>
 <body>
-    <div id="canvas"></div><div id="noise"></div>
+    <div id="canvas"></div>
     <div class="interface">
         <div id="status-bar">UPLINK_STATUS: READY</div>
         <div class="target-display" id="target-id">TARGET: ---</div>
-
         <div class="cluster">
             <button class="proto-btn" onclick="initializeRip()">INITIALIZE RIP</button>
             <button class="proto-btn" onclick="location.reload()">RESET NODE</button>
         </div>
-
         <div id="stream"></div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp; tg.expand();
+        const tg = window.Telegram.WebApp;
+        try { tg.expand(); } catch(e){}
         const p = new URLSearchParams(window.location.search);
         const target = p.get('target');
         const BACKEND = "https://archon-intelligence-backend.onrender.com";
         document.getElementById('target-id').innerText = target || "IDLE";
 
-        function speak(t) { const u = new SpeechSynthesisUtterance(t); u.rate = 1.2; window.speechSynthesis.speak(u); }
-
         async function initializeRip() {
-            document.getElementById('status-bar').innerText = "UPLINK_STATUS: FORCING_EXTRACTION...";
+            document.getElementById('status-bar').innerText = "UPLINK_STATUS: FETCHING DATA (Wait up to 60s)...";
             document.getElementById('status-bar').style.color = "#ffaa00";
-            try { tg.HapticFeedback.impactOccurred('heavy'); } catch(e){}
-            
-            let proto = (target && target.includes('@')) ? "email" : ((target && target.match(/\d+\./)) ? "ip" : "username");
-            executeRecursiveRip(target, proto);
-        }
-
-        async function executeRecursiveRip(node, proto) {
-            document.body.classList.add('ripping'); coreSpeed = 0.2; 
-            speak(`Ripping ${proto} node.`);
+            let proto = target.includes('@') ? "email" : (target.match(/\d+\./) ? "ip" : "username");
 
             try {
-                const res = await fetch(`${BACKEND}/api/scan?target=${node}&protocol=${proto}`);
+                // Pure, simple fetch. No voice. No bullshit.
+                const res = await fetch(`${BACKEND}/api/scan?target=${target}&protocol=${proto}&v=${Date.now()}`);
                 if(!res.ok) throw new Error(`HTTP ERROR: ${res.status}`);
-
+                
                 const data = await res.json();
                 
                 document.getElementById('status-bar').innerText = "UPLINK_STATUS: DATA_SECURED";
                 document.getElementById('status-bar').style.color = "#00ffcc";
                 renderCard(proto.toUpperCase(), data);
-
-                if(data.pivots && data.pivots.length > 0) {
-                    data.pivots.forEach(piv => {
-                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 4000);
-                    });
-                } else {
-                    setTimeout(() => { document.body.classList.remove('ripping'); coreSpeed = 0.005; }, 2000);
-                }
             } catch (e) { 
-                document.body.classList.remove('ripping'); 
-                document.getElementById('status-bar').innerText = "UPLINK_STATUS: BLOCKED";
+                document.getElementById('status-bar').innerText = "UPLINK_STATUS: FAILED. TAP TO RETRY.";
                 document.getElementById('status-bar').style.color = "#ff3333";
-                alert("SYSTEM BLOCK: " + e.message);
+                alert("If this failed, Render is currently booting up. Wait 45 seconds and tap Initialize Rip again. Error: " + e.message);
             }
         }
 
@@ -99,24 +67,12 @@
             const card = document.createElement('div'); card.className = 'card';
             card.innerHTML = `<div style="color:var(--neon); font-size:9px; margin-bottom:12px; letter-spacing:2px;">[ ${title}_ANALYSIS ]</div>`;
             
-            if (data && data.analysis) {
-                Object.entries(data.analysis).forEach(([k, v]) => {
-                    const row = document.createElement('div'); row.className = 'row';
-                    row.innerHTML = `<span>${k.toUpperCase()}</span><span class="val" id="rip-${title}-${k}">---</span>`;
-                    card.appendChild(row);
-                    decipher(document.getElementById(`rip-${title}-${k}`), String(v));
-                });
-            }
+            Object.entries(data.analysis).forEach(([k, v]) => {
+                const row = document.createElement('div'); row.className = 'row';
+                row.innerHTML = `<span>${k.toUpperCase()}</span><span class="val">${v}</span>`;
+                card.appendChild(row);
+            });
             document.getElementById('stream').prepend(card);
-            try { tg.HapticFeedback.impactOccurred('heavy'); } catch(e){}
-        }
-
-        function decipher(el, val) {
-            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*"; let i = 0;
-            const interval = setInterval(() => {
-                el.innerText = val.split("").map((c, idx) => idx < i ? val[idx] : chars[Math.floor(Math.random()*chars.length)]).join("");
-                if(i >= val.length) clearInterval(interval); i += 1/3;
-            }, 30);
         }
 
         let coreSpeed = 0.005;
