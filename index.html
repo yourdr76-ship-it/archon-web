@@ -87,7 +87,7 @@
         .val { color: #fff; font-weight: bold; width: 65%; word-wrap: break-word; text-align: right; text-shadow: 0 0 5px rgba(255,255,255,0.2); line-height: 1.4; }
         .val.alert { color: var(--archon-red); text-shadow: 0 0 8px var(--archon-red); }
         .val.found { color: var(--archon-warn); }
-        .val.ai-text { color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 11px; text-align: left; width: 100%; padding-top: 5px;}
+        .val.ai-text { color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 11px; text-align: left; width: 100%; padding-top: 5px; white-space: pre-wrap;}
 
         /* TERMINAL */
         .terminal { height: 100px; background: rgba(0,0,0,0.85); border: 1px solid #333; padding: 10px; font-size: 10px; color: #0f0; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; scrollbar-width: none; border-top: 2px solid #222; position: relative;}
@@ -202,6 +202,7 @@
             log(`Pinging Network -> Protocol: ${proto.toUpperCase()}`);
 
             try {
+                // Ensure to append timestamp to bypass aggressive caching
                 const res = await fetch(`${BACKEND}/api/scan?target=${node}&protocol=${proto}&v=${Date.now()}`);
                 if(!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
@@ -255,6 +256,7 @@
                     let valClass = "val";
                     let isLongText = false;
 
+                    // Color code alerts, found tags, block tags
                     if(String(v).includes("EXPOSED") || String(v).includes("CRITICAL") || String(v).includes("INVALID") || String(v).includes("TIMEOUT") || String(v).includes("NOT FOUND")) valClass += " alert";
                     if(String(v).includes("FOUND") && !String(v).includes("NOT FOUND")) valClass += " found";
                     
@@ -263,6 +265,7 @@
                         isLongText = true;
                     }
                     
+                    // Click-to-copy integration directly in the row
                     if (isLongText) {
                         html += `
                         <div class="data-row" style="flex-direction: column; align-items: flex-start;" onclick="copyToClipboard('${v.replace(/'/g, "\\'")}')">
@@ -284,7 +287,7 @@
             stream.scrollTop = stream.scrollHeight;
             try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){}
 
-            // Decipher effect for the data
+            // Initialize visual decipher effects
             if(data && data.analysis) {
                 Object.entries(data.analysis).forEach(([k, v]) => {
                     if (k === "AI_Threat_Profile") {
@@ -296,6 +299,7 @@
             }
         }
 
+        // --- CLIPBOARD ---
         function copyToClipboard(txt) {
             navigator.clipboard.writeText(txt).then(() => {
                 log(`Copied to clipboard: ${txt.substring(0, 20)}...`, "#00ffcc");
@@ -305,20 +309,23 @@
             });
         }
 
+        // --- TEXT RENDERING EFFECTS ---
         function decipher(el, finalVal) {
             const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*"; let i = 0;
+            finalVal = String(finalVal).replace(/\*\*/g, ''); // Strip markdown
             const interval = setInterval(() => {
-                el.innerText = finalVal.split("").map((c, idx) => idx < i ? finalVal[idx] : chars[Math.floor(Math.random()*chars.length)]).join("");
+                el.textContent = finalVal.split("").map((c, idx) => idx < i ? finalVal[idx] : chars[Math.floor(Math.random()*chars.length)]).join("");
                 if(i >= finalVal.length) clearInterval(interval);
                 i += 0.5;
             }, 30);
         }
 
         function typewriterEffect(el, finalVal) {
-            el.innerText = "";
+            el.textContent = "";
+            finalVal = String(finalVal).replace(/\*\*/g, ''); // Strip markdown
             let i = 0;
             const interval = setInterval(() => {
-                el.innerText += finalVal.charAt(i);
+                el.textContent += finalVal.charAt(i);
                 i++;
                 if (i >= finalVal.length) {
                     clearInterval(interval);
