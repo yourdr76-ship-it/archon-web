@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ARCHON INTELLIGENCE</title>
+    <title>ARCHON OSINT COMMAND</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -13,8 +13,9 @@
             --archon-cyan: #00ffcc; 
             --archon-red: #ff2a2a; 
             --archon-warn: #ffb700;
-            --bg: #030508;
-            --glass: rgba(0, 15, 20, 0.7);
+            --archon-ai: #b829ff;
+            --bg: #010305;
+            --glass: rgba(2, 10, 15, 0.75);
         }
 
         * { box-sizing: border-box; }
@@ -23,21 +24,22 @@
             margin: 0; background: var(--bg); color: #fff; 
             font-family: 'Share Tech Mono', monospace; 
             overflow: hidden; height: 100vh; user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* ---------------- BOOT SCREEN ---------------- */
+        /* ---------------- BOOT SEQUENCE ---------------- */
         #boot-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 9999; display: flex; flex-direction: column;
             justify-content: center; align-items: center; transition: opacity 0.5s;
         }
-        .boot-logo { font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 900; color: var(--archon-cyan); letter-spacing: 5px; text-shadow: 0 0 20px var(--archon-cyan); margin-bottom: 20px; }
-        .boot-log { font-size: 12px; color: #555; text-align: left; width: 80%; max-width: 400px; }
+        .boot-logo { font-family: 'Orbitron', sans-serif; font-size: 36px; font-weight: 900; color: var(--archon-cyan); letter-spacing: 8px; text-shadow: 0 0 25px var(--archon-cyan); margin-bottom: 25px; }
+        .boot-log { font-size: 11px; color: #555; text-align: left; width: 80%; max-width: 400px; line-height: 1.5; }
 
         /* ---------------- BACKGROUNDS ---------------- */
         #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: auto; }
         .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px); }
-        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.8) 150%); }
+        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.85) 120%); }
 
         /* ---------------- MAIN UI ---------------- */
         .ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; max-width: 900px; margin: 0 auto; padding: 15px; pointer-events: none; }
@@ -45,45 +47,55 @@
 
         /* HEADER */
         .archon-header { text-align: center; margin-bottom: 15px; }
-        .archon-title { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; letter-spacing: 4px; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        .archon-subtitle { font-size: 10px; color: var(--archon-cyan); letter-spacing: 8px; margin-top: 5px; }
+        .archon-title { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: 6px; color: #fff; text-shadow: 0 0 15px rgba(0,255,204,0.6); }
+        .archon-subtitle { font-size: 10px; color: var(--archon-cyan); letter-spacing: 8px; margin-top: 5px; text-transform: uppercase; }
 
-        .target-box { background: var(--glass); border: 1px solid rgba(0,255,204,0.3); border-left: 5px solid var(--archon-cyan); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 15px rgba(0,255,204,0.1); margin-bottom: 15px; backdrop-filter: blur(5px); }
-        .target-id { font-family: 'Orbitron', sans-serif; font-size: 20px; color: var(--archon-cyan); text-transform: uppercase; }
-        .status-badge { background: rgba(0,255,204,0.1); padding: 5px 10px; font-size: 10px; border: 1px solid var(--archon-cyan); border-radius: 2px; animation: pulse 2s infinite; }
+        .target-box { background: var(--glass); border: 1px solid rgba(0,255,204,0.3); border-left: 5px solid var(--archon-cyan); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 20px rgba(0,255,204,0.1); margin-bottom: 10px; backdrop-filter: blur(8px); position: relative; overflow: hidden; }
+        .target-id { font-family: 'Orbitron', sans-serif; font-size: 18px; color: var(--archon-cyan); text-transform: uppercase; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
+        .status-badge { background: rgba(0,255,204,0.1); padding: 5px 10px; font-size: 10px; border: 1px solid var(--archon-cyan); animation: pulse 2s infinite; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
+        /* PROGRESS BAR */
+        .progress-container { width: 100%; height: 3px; background: rgba(255,255,255,0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background: var(--archon-cyan); box-shadow: 0 0 10px var(--archon-cyan); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
         /* CONTROLS */
         .btn-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .btn { background: rgba(0,0,0,0.6); border: 1px solid var(--archon-cyan); color: var(--archon-cyan); padding: 15px; font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; text-align: center; }
+        .btn { background: rgba(0,0,0,0.8); border: 1px solid var(--archon-cyan); color: var(--archon-cyan); padding: 15px; font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; text-align: center; }
         .btn:hover { background: rgba(0,255,204,0.2); box-shadow: 0 0 15px rgba(0,255,204,0.4); }
-        .btn:active { background: var(--archon-cyan); color: #000; }
+        .btn:active { background: var(--archon-cyan); color: #000; transform: scale(0.98); }
         .btn-reset { border-color: #555; color: #888; }
-        .btn-reset:hover { background: rgba(255,0,0,0.2); border-color: var(--archon-red); color: var(--archon-red); }
+        .btn-reset:hover { border-color: var(--archon-red); color: var(--archon-red); background: rgba(255,42,42,0.1); }
 
         /* DATA STREAM */
         .stream { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; scrollbar-width: none; }
         .stream::-webkit-scrollbar { display: none; }
         
-        .card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-top: 2px solid var(--archon-cyan); padding: 15px; backdrop-filter: blur(10px); animation: dropIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; }
-        @keyframes dropIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .card { background: var(--glass); border: 1px solid rgba(0,255,204,0.1); border-top: 2px solid var(--archon-cyan); padding: 15px; backdrop-filter: blur(10px); animation: dropIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card.ai-node { border-top-color: var(--archon-ai); box-shadow: 0 -5px 20px rgba(184, 41, 255, 0.2); }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
         
         .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,255,204,0.2); padding-bottom: 10px; margin-bottom: 10px; font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--archon-cyan); letter-spacing: 2px; }
+        .card.ai-node .card-header { color: var(--archon-ai); border-bottom-color: rgba(184, 41, 255, 0.3); }
+
+        .data-row { display: flex; justify-content: space-between; font-size: 12px; padding: 10px 5px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: 0.2s; cursor: pointer; align-items: center; }
+        .data-row:hover { background: rgba(0,255,204,0.1); padding-left: 10px; border-left: 2px solid var(--archon-cyan); }
+        .card.ai-node .data-row:hover { background: rgba(184, 41, 255, 0.1); border-left: 2px solid var(--archon-ai); }
         
-        .data-row { display: flex; justify-content: space-between; font-size: 12px; padding: 8px 5px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: 0.2s; cursor: pointer; }
-        .data-row:hover { background: rgba(0,255,204,0.1); padding-left: 10px; }
-        .data-row:active { background: rgba(0,255,204,0.3); }
-        .key { color: #777; text-transform: uppercase; font-size: 10px; }
-        .val { color: #fff; font-weight: bold; max-width: 65%; word-wrap: break-word; text-align: right; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+        .key { color: #888; text-transform: uppercase; font-size: 10px; width: 35%; }
+        .val { color: #fff; font-weight: bold; width: 65%; word-wrap: break-word; text-align: right; text-shadow: 0 0 5px rgba(255,255,255,0.2); line-height: 1.4; }
         .val.alert { color: var(--archon-red); text-shadow: 0 0 8px var(--archon-red); }
+        .val.found { color: var(--archon-warn); }
+        .val.ai-text { color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 11px; text-align: left; width: 100%; padding-top: 5px;}
 
         /* TERMINAL */
-        .terminal { height: 90px; background: rgba(0,0,0,0.8); border: 1px solid #333; padding: 10px; font-size: 10px; color: #0f0; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; scrollbar-width: none; box-shadow: inset 0 0 20px rgba(0,0,0,1); border-top: 2px solid #222; }
+        .terminal { height: 100px; background: rgba(0,0,0,0.85); border: 1px solid #333; padding: 10px; font-size: 10px; color: #0f0; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; scrollbar-width: none; border-top: 2px solid #222; position: relative;}
+        .terminal::before { content: "SYS.LOG"; position: absolute; top: 2px; right: 5px; font-size: 8px; color: #444; }
         .log-line { margin-bottom: 4px; opacity: 0.8; line-height: 1.3; }
 
         /* GLARE EFFECT */
-        .glare { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transform: skewX(-25deg); animation: swipe 6s infinite; pointer-events: none; }
+        .glare { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transform: skewX(-25deg); animation: swipe 5s infinite; pointer-events: none; }
         @keyframes swipe { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
     </style>
 </head>
@@ -99,26 +111,27 @@
 
     <div class="ui-layer">
         <div class="archon-header">
-            <div class="archon-title">ARCHON INTELLIGENCE</div>
-            <div class="archon-subtitle">OMNI-CHAIN OSINT ENGINE</div>
+            <div class="archon-title">ARCHON OSINT</div>
+            <div class="archon-subtitle">GLOBAL SURVEILLANCE MATRIX</div>
         </div>
 
         <div class="target-box interactive">
             <div class="glare"></div>
             <div>
-                <div style="font-size: 9px; color: #666; margin-bottom: 4px; letter-spacing: 1px;">ACTIVE_TARGET</div>
+                <div style="font-size: 9px; color: #777; margin-bottom: 4px; letter-spacing: 1px;">ACTIVE_TARGET</div>
                 <div class="target-id" id="target-id">---</div>
             </div>
-            <div class="status-badge" id="sys-status">AWAITING</div>
+            <div class="status-badge" id="sys-status">STANDBY</div>
         </div>
+        
+        <div class="progress-container"><div class="progress-bar" id="prog-bar"></div></div>
 
         <div class="btn-grid interactive">
-            <div class="btn" onclick="initiateHack()" id="btn-main">INITIALIZE OMNI-CHAIN</div>
-            <div class="btn btn-reset" onclick="location.reload()">ABORT</div>
+            <div class="btn" onclick="initiateHack()" id="btn-main">EXECUTE OMNI-CHAIN</div>
+            <div class="btn btn-reset" onclick="location.reload()">PURGE CACHE</div>
         </div>
 
         <div class="stream interactive" id="stream"></div>
-
         <div class="terminal interactive" id="term"></div>
     </div>
 
@@ -128,11 +141,13 @@
         const p = new URLSearchParams(window.location.search);
         const target = p.get('target');
         const BACKEND = "https://archon-intelligence-backend.onrender.com";
-
+        
         // --- BOOT SEQUENCE ---
         const bootLines = [
-            "Initializing kernel modules...", "Mounting secure file systems...", 
-            "Bypassing local restrictions...", "Establishing encrypted uplink to Archon Core...",
+            "Initializing OSINT kernel modules...", 
+            "Mounting asynchronous HTTP clients...", 
+            "Bypassing local geolocation limits...", 
+            "Establishing uplink to NVIDIA Cognitive Core...",
             "SYSTEM READY."
         ];
         let bLog = document.getElementById('boot-text');
@@ -141,11 +156,14 @@
             if(bStep < bootLines.length) { bLog.innerHTML += `<div>> ${bootLines[bStep]}</div>`; bStep++; }
             else { 
                 clearInterval(bootInterval);
-                setTimeout(() => { document.getElementById('boot-screen').style.opacity = '0'; setTimeout(() => document.getElementById('boot-screen').remove(), 500); }, 500);
+                setTimeout(() => { 
+                    document.getElementById('boot-screen').style.opacity = '0'; 
+                    setTimeout(() => document.getElementById('boot-screen').remove(), 500); 
+                }, 400);
                 if(target) { document.getElementById('target-id').innerText = target; log(`Target lock acquired: ${target}`, '#00ffcc'); }
-                else { document.getElementById('target-id').innerText = "NO_TARGET"; log(`ERR: No parameters passed.`, '#ff3333'); }
+                else { document.getElementById('target-id').innerText = "NO_TARGET"; log(`ERR: No parameters passed.`, '#ff2a2a'); }
             }
-        }, 300);
+        }, 250);
 
         // --- TERMINAL LOGGER ---
         function log(msg, color="#0f0") {
@@ -157,36 +175,47 @@
             term.scrollTop = term.scrollHeight;
         }
 
-        // --- EXECUTION CORE ---
+        // --- CORE EXECUTION ---
+        let totalSteps = 7; 
+        let currentStep = 0;
+        let isExtracting = false;
+
         async function initiateHack() {
-            if(!target) return log("ABORTED: No target.", "#ff3333");
+            if(!target || isExtracting) return;
+            isExtracting = true;
             document.getElementById('sys-status').innerText = "EXTRACTING";
             document.getElementById('sys-status').style.color = "var(--archon-warn)";
             document.getElementById('sys-status').style.borderColor = "var(--archon-warn)";
-            document.getElementById('btn-main').innerText = "SYSTEM BUSY...";
+            document.getElementById('btn-main').innerText = "UPLINK ACTIVE...";
+            document.getElementById('btn-main').style.color = "var(--archon-warn)";
+            document.getElementById('btn-main').style.borderColor = "var(--archon-warn)";
+            document.getElementById('prog-bar').style.width = "5%";
             
             triggerCoreState('hacking');
-            log(`COMMENCING OMNI-CHAIN ON [${target}]`, "#ffb700");
+            log(`COMMENCING LIVE SCAN ON [${target}]`, "#ffb700");
             try { tg.HapticFeedback.impactOccurred('heavy'); } catch(e){}
             
             executeRecursiveRip(target, "initial");
         }
 
         async function executeRecursiveRip(node, proto) {
-            log(`Injecting payload -> Protocol Layer: ${proto.toUpperCase()}`);
+            log(`Pinging Network -> Protocol: ${proto.toUpperCase()}`);
 
             try {
                 const res = await fetch(`${BACKEND}/api/scan?target=${node}&protocol=${proto}&v=${Date.now()}`);
                 if(!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 
-                log(`Layer ${proto.toUpperCase()} breached. Data parsed.`, "#00ffcc");
+                log(`Layer ${proto.toUpperCase()} breached.`, proto === 'ai_profiling' ? '#b829ff' : '#00ffcc');
                 renderCard(proto.toUpperCase(), data);
+                
+                currentStep++;
+                document.getElementById('prog-bar').style.width = `${Math.min((currentStep / totalSteps) * 100, 100)}%`;
 
                 if(data.pivots && data.pivots.length > 0) {
                     data.pivots.forEach(piv => {
-                        log(`PIVOT DETECTED -> Targeting ${piv.p.toUpperCase()}...`, "#aaa");
-                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 2500);
+                        log(`PIVOT -> Expanding search to ${piv.p.toUpperCase()}...`, "#aaa");
+                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 2000);
                     });
                 } else {
                     setTimeout(() => { 
@@ -195,16 +224,21 @@
                         document.getElementById('sys-status').style.color = "var(--archon-cyan)";
                         document.getElementById('sys-status').style.borderColor = "var(--archon-cyan)";
                         document.getElementById('btn-main').innerText = "EXTRACTION COMPLETE";
-                        log("Omni-Chain execution complete.", "#00ffcc");
+                        document.getElementById('btn-main').style.color = "var(--archon-cyan)";
+                        document.getElementById('btn-main').style.borderColor = "var(--archon-cyan)";
+                        document.getElementById('prog-bar').style.width = "100%";
+                        log("Omni-Chain complete. All nodes secured.", "#00ffcc");
                         try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+                        isExtracting = false;
                     }, 2000);
                 }
             } catch (e) { 
                 triggerCoreState('idle');
                 document.getElementById('sys-status').innerText = "FAILED";
                 document.getElementById('sys-status').style.color = "var(--archon-red)";
-                log(`FATAL: Connection blocked. Server sleep or timeout.`, "#ff3333");
-                try { tg.HapticFeedback.notificationOccurred('error'); } catch(err){}
+                document.getElementById('btn-main').innerText = "RETRY CONNECTION";
+                log(`FATAL: Connection blocked. ${e.message}`, "#ff2a2a");
+                isExtracting = false;
             }
         }
 
@@ -212,44 +246,62 @@
         function renderCard(title, data) {
             const card = document.createElement('div'); 
             card.className = 'card';
-            
-            let html = `
-                <div class="card-header">
-                    <span>// ${title}</span>
-                    <span style="color:#555;">[VERIFIED]</span>
-                </div>
-            `;
+            if (title === 'AI_PROFILING') card.classList.add('ai-node');
+
+            let html = `<div class="card-header"><span>// ${title}</span><span style="color:#555;">[VERIFIED]</span></div>`;
             
             if(data && data.analysis) {
                 Object.entries(data.analysis).forEach(([k, v]) => {
-                    const isAlert = String(v).includes("EXPOSED") || String(v).includes("CRITICAL");
-                    const valClass = isAlert ? "val alert" : "val";
+                    let valClass = "val";
+                    let isLongText = false;
+
+                    if(String(v).includes("EXPOSED") || String(v).includes("CRITICAL") || String(v).includes("INVALID") || String(v).includes("TIMEOUT") || String(v).includes("NOT FOUND")) valClass += " alert";
+                    if(String(v).includes("FOUND") && !String(v).includes("NOT FOUND")) valClass += " found";
                     
-                    // Click to copy data feature
-                    html += `
+                    if (k === "AI_Threat_Profile") {
+                        valClass += " ai-text";
+                        isLongText = true;
+                    }
+                    
+                    if (isLongText) {
+                        html += `
+                        <div class="data-row" style="flex-direction: column; align-items: flex-start;" onclick="copyToClipboard('${v.replace(/'/g, "\\'")}')">
+                            <span class="key" style="margin-bottom: 8px;">${k.replace(/_/g, ' ')}</span>
+                            <span class="${valClass}" id="val-${title}-${k}">---</span>
+                        </div>`;
+                    } else {
+                        html += `
                         <div class="data-row" onclick="copyToClipboard('${v}')">
                             <span class="key">${k.replace(/_/g, ' ')}</span>
                             <span class="${valClass}" id="val-${title}-${k}">---</span>
-                        </div>
-                    `;
+                        </div>`;
+                    }
                 });
             }
             card.innerHTML = html;
-            
             const stream = document.getElementById('stream');
             stream.appendChild(card);
             stream.scrollTop = stream.scrollHeight;
             try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){}
 
+            // Decipher effect for the data
             if(data && data.analysis) {
-                Object.entries(data.analysis).forEach(([k, v]) => decipher(document.getElementById(`val-${title}-${k}`), String(v)));
+                Object.entries(data.analysis).forEach(([k, v]) => {
+                    if (k === "AI_Threat_Profile") {
+                        typewriterEffect(document.getElementById(`val-${title}-${k}`), String(v));
+                    } else {
+                        decipher(document.getElementById(`val-${title}-${k}`), String(v));
+                    }
+                });
             }
         }
 
         function copyToClipboard(txt) {
             navigator.clipboard.writeText(txt).then(() => {
-                log(`Copied to clipboard: ${txt}`, "#00ffcc");
+                log(`Copied to clipboard: ${txt.substring(0, 20)}...`, "#00ffcc");
                 try { tg.HapticFeedback.selectionChanged(); } catch(e){}
+            }).catch(err => {
+                log(`Clipboard override failed.`, "#ff2a2a");
             });
         }
 
@@ -262,6 +314,18 @@
             }, 30);
         }
 
+        function typewriterEffect(el, finalVal) {
+            el.innerText = "";
+            let i = 0;
+            const interval = setInterval(() => {
+                el.innerText += finalVal.charAt(i);
+                i++;
+                if (i >= finalVal.length) {
+                    clearInterval(interval);
+                }
+            }, 10);
+        }
+
         // --- 🌌 POINTER-REACTIVE 3D NEXUS ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -269,68 +333,48 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Core Object
-        const coreGeo = new THREE.IcosahedronGeometry(2, 1);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.3 });
+        const coreGeo = new THREE.IcosahedronGeometry(1.5, 1);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.4 });
         const core = new THREE.Mesh(coreGeo, coreMat);
         scene.add(core);
 
-        // Outer Wireframe Sphere
-        const shellGeo = new THREE.IcosahedronGeometry(2.8, 2);
-        const shellMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.05 });
-        const shell = new THREE.Mesh(shellGeo, shellMat);
-        scene.add(shell);
+        const ringGeo = new THREE.TorusGeometry(3.2, 0.015, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.15 });
+        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+        const ring2 = new THREE.Mesh(ringGeo, ringMat);
+        ring1.rotation.x = Math.PI / 2; ring2.rotation.y = Math.PI / 2;
+        scene.add(ring1); scene.add(ring2);
 
         camera.position.z = 6;
-
-        // Interaction State
-        let targetSpeed = 0.002;
-        let currentSpeed = 0.002;
+        let targetSpeed = 0.002; let currentSpeed = 0.002;
         let mouseX = 0; let mouseY = 0;
-        let targetX = 0; let targetY = 0;
 
-        // Track Pointer (Mouse / Touch)
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
-        });
-        document.addEventListener('touchmove', (e) => {
-            mouseX = (e.touches[0].clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.touches[0].clientY - window.innerHeight / 2) * 0.001;
-        });
+        document.addEventListener('mousemove', (e) => { mouseX = (e.clientX - window.innerWidth/2)*0.001; mouseY = (e.clientY - window.innerHeight/2)*0.001; });
+        document.addEventListener('touchmove', (e) => { mouseX = (e.touches[0].clientX - window.innerWidth/2)*0.001; mouseY = (e.touches[0].clientY - window.innerHeight/2)*0.001; });
 
         function triggerCoreState(state) {
             if(state === 'hacking') {
-                targetSpeed = 0.05;
-                coreMat.color.setHex(0xffb700); shellMat.color.setHex(0xffb700);
+                targetSpeed = 0.06;
+                coreMat.color.setHex(0xffb700); ringMat.color.setHex(0xffb700);
             } else {
                 targetSpeed = 0.002;
-                coreMat.color.setHex(0x00ffcc); shellMat.color.setHex(0x00ffcc);
+                coreMat.color.setHex(0x00ffcc); ringMat.color.setHex(0x00ffcc);
             }
         }
 
         function animate() { 
             requestAnimationFrame(animate); 
-            
-            // Smooth speed and rotation interpolations
             currentSpeed += (targetSpeed - currentSpeed) * 0.05;
-            targetX = mouseX * 2; targetY = mouseY * 2;
             
-            core.rotation.y += currentSpeed + (targetX - core.rotation.y) * 0.05;
-            core.rotation.x += currentSpeed * 0.5 + (targetY - core.rotation.x) * 0.05;
-            
-            shell.rotation.y -= currentSpeed * 0.5;
-            shell.rotation.z += currentSpeed * 0.2;
+            core.rotation.y += currentSpeed + (mouseX*3 - core.rotation.y)*0.05;
+            core.rotation.x += currentSpeed*0.6 + (mouseY*3 - core.rotation.x)*0.05;
+            ring1.rotation.z += currentSpeed * 0.8;
+            ring2.rotation.z -= currentSpeed * 0.8;
             
             renderer.render(scene, camera); 
         }
         animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
     </script>
 </body>
 </html>
