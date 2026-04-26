@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ARCHON OSINT COMMAND</title>
+    <title>ARCHON INTELLIGENCE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -33,7 +33,7 @@
             background: #000; z-index: 9999; display: flex; flex-direction: column;
             justify-content: center; align-items: center; transition: opacity 0.5s;
         }
-        .boot-logo { font-family: 'Orbitron', sans-serif; font-size: 36px; font-weight: 900; color: var(--archon-cyan); letter-spacing: 8px; text-shadow: 0 0 25px var(--archon-cyan); margin-bottom: 25px; }
+        .boot-logo { font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900; color: var(--archon-cyan); letter-spacing: 6px; text-shadow: 0 0 20px var(--archon-cyan); margin-bottom: 25px; text-align: center; }
         .boot-log { font-size: 11px; color: #555; text-align: left; width: 80%; max-width: 400px; line-height: 1.5; }
 
         /* ---------------- BACKGROUNDS ---------------- */
@@ -41,24 +41,29 @@
         .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px); }
         .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.85) 120%); }
 
-        /* ---------------- MAIN UI ---------------- */
+        /* ---------------- MAIN UI (MOBILE FIRST) ---------------- */
         .ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; max-width: 900px; margin: 0 auto; padding: 15px; pointer-events: none; }
         .interactive { pointer-events: auto; }
 
         /* HEADER */
         .archon-header { text-align: center; margin-bottom: 15px; }
-        .archon-title { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: 6px; color: #fff; text-shadow: 0 0 15px rgba(0,255,204,0.6); }
-        .archon-subtitle { font-size: 10px; color: var(--archon-cyan); letter-spacing: 8px; margin-top: 5px; text-transform: uppercase; }
+        .archon-title { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: 4px; color: #fff; text-shadow: 0 0 15px rgba(0,255,204,0.6); transition: 0.3s; }
+        .archon-subtitle { font-size: 10px; color: var(--archon-cyan); letter-spacing: 8px; margin-top: 5px; text-transform: uppercase; transition: 0.3s; }
 
+        /* TARGET BOX & LASER ANIMATION */
         .target-box { background: var(--glass); border: 1px solid rgba(0,255,204,0.3); border-left: 5px solid var(--archon-cyan); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 20px rgba(0,255,204,0.1); margin-bottom: 10px; backdrop-filter: blur(8px); position: relative; overflow: hidden; }
-        .target-id { font-family: 'Orbitron', sans-serif; font-size: 18px; color: var(--archon-cyan); text-transform: uppercase; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
-        .status-badge { background: rgba(0,255,204,0.1); padding: 5px 10px; font-size: 10px; border: 1px solid var(--archon-cyan); animation: pulse 2s infinite; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .target-id { font-family: 'Orbitron', sans-serif; font-size: 18px; color: var(--archon-cyan); text-transform: uppercase; text-shadow: 0 0 10px rgba(0,255,204,0.5); position: relative; z-index: 2; transition: 0.3s;}
+        .status-badge { background: rgba(0,255,204,0.1); padding: 5px 10px; font-size: 10px; border: 1px solid var(--archon-cyan); position: relative; z-index: 2; transition: 0.3s;}
+        
+        .scanning-laser { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--archon-warn); box-shadow: 0 0 15px var(--archon-warn), 0 0 30px var(--archon-warn); opacity: 0; z-index: 1; pointer-events: none; }
+        body.hacking .scanning-laser { opacity: 1; animation: scanSweep 1.5s linear infinite alternate; }
+        @keyframes scanSweep { 0% { top: 0; } 100% { top: 100%; } }
 
         /* PROGRESS BAR */
         .progress-container { width: 100%; height: 3px; background: rgba(255,255,255,0.1); margin-bottom: 15px; position: relative; overflow: hidden; }
         .progress-bar { height: 100%; width: 0%; background: var(--archon-cyan); box-shadow: 0 0 10px var(--archon-cyan); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.hacking .progress-bar { animation: progressPulse 1s infinite; }
+        @keyframes progressPulse { 0% { box-shadow: 0 0 5px var(--archon-warn); background: var(--archon-warn); } 50% { box-shadow: 0 0 20px #fff; background: #fff; } 100% { box-shadow: 0 0 5px var(--archon-warn); background: var(--archon-warn); } }
 
         /* CONTROLS */
         .btn-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px; }
@@ -76,32 +81,62 @@
         .card.ai-node { border-top-color: var(--archon-ai); box-shadow: 0 -5px 20px rgba(184, 41, 255, 0.2); }
         @keyframes dropIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
         
-        .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,255,204,0.2); padding-bottom: 10px; margin-bottom: 10px; font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--archon-cyan); letter-spacing: 2px; }
+        .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,255,204,0.2); padding-bottom: 10px; margin-bottom: 10px; font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--archon-cyan); letter-spacing: 2px; transition: 0.3s;}
         .card.ai-node .card-header { color: var(--archon-ai); border-bottom-color: rgba(184, 41, 255, 0.3); }
 
         .data-row { display: flex; justify-content: space-between; font-size: 12px; padding: 10px 5px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: 0.2s; cursor: pointer; align-items: center; }
         .data-row:hover { background: rgba(0,255,204,0.1); padding-left: 10px; border-left: 2px solid var(--archon-cyan); }
         .card.ai-node .data-row:hover { background: rgba(184, 41, 255, 0.1); border-left: 2px solid var(--archon-ai); }
         
-        .key { color: #888; text-transform: uppercase; font-size: 10px; width: 35%; }
-        .val { color: #fff; font-weight: bold; width: 65%; word-wrap: break-word; text-align: right; text-shadow: 0 0 5px rgba(255,255,255,0.2); line-height: 1.4; }
+        .key { color: #888; text-transform: uppercase; font-size: 10px; width: 35%; transition: 0.3s;}
+        .val { color: #fff; font-weight: bold; width: 65%; word-wrap: break-word; text-align: right; text-shadow: 0 0 5px rgba(255,255,255,0.2); line-height: 1.4; transition: 0.3s;}
         .val.alert { color: var(--archon-red); text-shadow: 0 0 8px var(--archon-red); }
         .val.found { color: var(--archon-warn); }
         .val.ai-text { color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 11px; text-align: left; width: 100%; padding-top: 5px; white-space: pre-wrap;}
 
         /* TERMINAL */
-        .terminal { height: 100px; background: rgba(0,0,0,0.85); border: 1px solid #333; padding: 10px; font-size: 10px; color: #0f0; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; scrollbar-width: none; border-top: 2px solid #222; position: relative;}
+        .terminal { height: 110px; background: rgba(0,0,0,0.85); border: 1px solid #333; padding: 10px; font-size: 10px; color: #0f0; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; scrollbar-width: none; border-top: 2px solid #222; position: relative; transition: 0.3s;}
         .terminal::before { content: "SYS.LOG"; position: absolute; top: 2px; right: 5px; font-size: 8px; color: #444; }
         .log-line { margin-bottom: 4px; opacity: 0.8; line-height: 1.3; }
+        .log-line.sub { color: #4488ff; padding-left: 10px; border-left: 1px dashed #4488ff; }
+        .log-line.ai { color: var(--archon-ai); padding-left: 10px; border-left: 1px dashed var(--archon-ai); }
 
         /* GLARE EFFECT */
-        .glare { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transform: skewX(-25deg); animation: swipe 5s infinite; pointer-events: none; }
+        .glare { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transform: skewX(-25deg); animation: swipe 5s infinite; pointer-events: none; z-index: 1;}
         @keyframes swipe { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+
+        /* ---------------- TABLET SCALING OPTIMIZATION ---------------- */
+        @media (min-width: 768px) {
+            .ui-layer { padding: 30px 40px; max-width: 800px; }
+            .boot-logo { font-size: 42px; letter-spacing: 12px; }
+            .boot-log { font-size: 14px; max-width: 600px; }
+            
+            .archon-title { font-size: 36px; letter-spacing: 8px; }
+            .archon-subtitle { font-size: 14px; letter-spacing: 12px; margin-top: 8px;}
+            
+            .target-box { padding: 25px; margin-bottom: 20px;}
+            .target-id { font-size: 26px; }
+            .status-badge { font-size: 13px; padding: 8px 16px; }
+            
+            .progress-container { height: 4px; margin-bottom: 20px; }
+            
+            .btn { font-size: 16px; padding: 20px; letter-spacing: 4px;}
+            .btn-grid { gap: 15px; margin-bottom: 25px; }
+            
+            .card { padding: 20px; margin-bottom: 20px;}
+            .card-header { font-size: 14px; padding-bottom: 12px; margin-bottom: 15px;}
+            .data-row { font-size: 16px; padding: 12px 8px; }
+            .key { font-size: 12px; }
+            .val.ai-text { font-size: 15px; padding-top: 10px; line-height: 1.6;}
+            
+            .terminal { height: 160px; font-size: 12px; padding: 15px;}
+            .terminal::before { font-size: 10px; top: 5px; right: 8px; }
+        }
     </style>
 </head>
 <body>
     <div id="boot-screen">
-        <div class="boot-logo">ARCHON</div>
+        <div class="boot-logo">ARCHON INTELLIGENCE</div>
         <div class="boot-log" id="boot-text"></div>
     </div>
 
@@ -111,14 +146,15 @@
 
     <div class="ui-layer">
         <div class="archon-header">
-            <div class="archon-title">ARCHON OSINT</div>
+            <div class="archon-title">ARCHON INTELLIGENCE</div>
             <div class="archon-subtitle">GLOBAL SURVEILLANCE MATRIX</div>
         </div>
 
         <div class="target-box interactive">
             <div class="glare"></div>
+            <div class="scanning-laser"></div>
             <div>
-                <div style="font-size: 9px; color: #777; margin-bottom: 4px; letter-spacing: 1px;">ACTIVE_TARGET</div>
+                <div style="font-size: 9px; color: #777; margin-bottom: 4px; letter-spacing: 1px; position: relative; z-index: 2;">ACTIVE_TARGET</div>
                 <div class="target-id" id="target-id">---</div>
             </div>
             <div class="status-badge" id="sys-status">STANDBY</div>
@@ -144,10 +180,10 @@
         
         // --- BOOT SEQUENCE ---
         const bootLines = [
-            "Initializing OSINT kernel modules...", 
+            "Initializing ARCHON INTELLIGENCE modules...", 
             "Mounting asynchronous HTTP clients...", 
-            "Bypassing local geolocation limits...", 
-            "Establishing uplink to NVIDIA Cognitive Core...",
+            "Injecting human-mimicry jitter algorithms...", 
+            "Establishing uplink to DeepSeek V4 Pro...",
             "SYSTEM READY."
         ];
         let bLog = document.getElementById('boot-text');
@@ -166,10 +202,10 @@
         }, 250);
 
         // --- TERMINAL LOGGER ---
-        function log(msg, color="#0f0") {
+        function log(msg, color="#0f0", extraClass="") {
             const term = document.getElementById('term');
             const entry = document.createElement('div');
-            entry.className = 'log-line';
+            entry.className = `log-line ${extraClass}`;
             entry.innerHTML = `<span style="color:${color}">[${new Date().toISOString().substring(11,19)}] ${msg}</span>`;
             term.appendChild(entry);
             term.scrollTop = term.scrollHeight;
@@ -183,6 +219,8 @@
         async function initiateHack() {
             if(!target || isExtracting) return;
             isExtracting = true;
+            document.body.classList.add('hacking'); 
+            
             document.getElementById('sys-status').innerText = "EXTRACTING";
             document.getElementById('sys-status').style.color = "var(--archon-warn)";
             document.getElementById('sys-status').style.borderColor = "var(--archon-warn)";
@@ -200,10 +238,25 @@
 
         async function executeRecursiveRip(node, proto) {
             log(`Pinging Network -> Protocol: ${proto.toUpperCase()}`);
+            
+            let subRoutineTimer = null;
+            if(proto === "social_graph") {
+                const socialNodes = ["X_Syndication", "Meta_Graph_API", "TikTok_CDN_Edge", "Reddit_Auth_Bypass", "GitHub_Core", "Telegram_Web_Sockets", "Twitch_Relay", "Pinterest_GQL"];
+                subRoutineTimer = setInterval(() => {
+                    const rndNode = socialNodes[Math.floor(Math.random() * socialNodes.length)];
+                    log(`[~] Executing jitter delay... probing ${rndNode}`, "#4488ff", "sub");
+                }, 1300);
+            } else if (proto === "ai_profiling") {
+                subRoutineTimer = setInterval(() => {
+                    log(`[~] DeepSeek Cognitive Core reasoning...`, "var(--archon-ai)", "ai");
+                }, 1500);
+            }
 
             try {
-                // Ensure to append timestamp to bypass aggressive caching
                 const res = await fetch(`${BACKEND}/api/scan?target=${node}&protocol=${proto}&v=${Date.now()}`);
+                
+                if (subRoutineTimer) clearInterval(subRoutineTimer);
+                
                 if(!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 
@@ -216,10 +269,11 @@
                 if(data.pivots && data.pivots.length > 0) {
                     data.pivots.forEach(piv => {
                         log(`PIVOT -> Expanding search to ${piv.p.toUpperCase()}...`, "#aaa");
-                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 2000);
+                        setTimeout(() => executeRecursiveRip(piv.t, piv.p), 1500);
                     });
                 } else {
                     setTimeout(() => { 
+                        document.body.classList.remove('hacking'); 
                         triggerCoreState('idle');
                         document.getElementById('sys-status').innerText = "SECURED";
                         document.getElementById('sys-status').style.color = "var(--archon-cyan)";
@@ -228,12 +282,14 @@
                         document.getElementById('btn-main').style.color = "var(--archon-cyan)";
                         document.getElementById('btn-main').style.borderColor = "var(--archon-cyan)";
                         document.getElementById('prog-bar').style.width = "100%";
-                        log("Omni-Chain complete. All nodes secured.", "#00ffcc");
+                        log("ARCHON INTELLIGENCE Omni-Chain complete. All nodes secured.", "#00ffcc");
                         try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
                         isExtracting = false;
                     }, 2000);
                 }
             } catch (e) { 
+                if (subRoutineTimer) clearInterval(subRoutineTimer);
+                document.body.classList.remove('hacking');
                 triggerCoreState('idle');
                 document.getElementById('sys-status').innerText = "FAILED";
                 document.getElementById('sys-status').style.color = "var(--archon-red)";
@@ -256,7 +312,6 @@
                     let valClass = "val";
                     let isLongText = false;
 
-                    // Color code alerts, found tags, block tags
                     if(String(v).includes("EXPOSED") || String(v).includes("CRITICAL") || String(v).includes("INVALID") || String(v).includes("TIMEOUT") || String(v).includes("NOT FOUND")) valClass += " alert";
                     if(String(v).includes("FOUND") && !String(v).includes("NOT FOUND")) valClass += " found";
                     
@@ -265,7 +320,6 @@
                         isLongText = true;
                     }
                     
-                    // Click-to-copy integration directly in the row
                     if (isLongText) {
                         html += `
                         <div class="data-row" style="flex-direction: column; align-items: flex-start;" onclick="copyToClipboard('${v.replace(/'/g, "\\'")}')">
@@ -287,7 +341,6 @@
             stream.scrollTop = stream.scrollHeight;
             try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){}
 
-            // Initialize visual decipher effects
             if(data && data.analysis) {
                 Object.entries(data.analysis).forEach(([k, v]) => {
                     if (k === "AI_Threat_Profile") {
@@ -299,7 +352,6 @@
             }
         }
 
-        // --- CLIPBOARD ---
         function copyToClipboard(txt) {
             navigator.clipboard.writeText(txt).then(() => {
                 log(`Copied to clipboard: ${txt.substring(0, 20)}...`, "#00ffcc");
