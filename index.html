@@ -13,24 +13,41 @@
         body { margin: 0; background: var(--bg); color: #fff; font-family: 'Share Tech Mono', monospace; overflow: hidden; height: 100vh; user-select: none; }
         
         #boot-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.8s; }
-        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        
         .ui-layer { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; max-width: 900px; margin: 0 auto; padding: 20px; pointer-events: none; }
         .interactive { pointer-events: auto; }
         
-        .archon-title { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: 6px; text-align: center; text-shadow: 0 0 20px var(--archon-cyan); margin-bottom: 20px; color: var(--archon-cyan); }
+        .archon-title { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: 6px; text-align: center; text-shadow: 0 0 20px var(--archon-cyan); margin-bottom: 20px; color: var(--archon-cyan); flex-shrink: 0; }
         
-        .target-box { background: var(--glass); border-left: 4px solid var(--archon-cyan); padding: 18px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(12px); position: relative; overflow: hidden; margin-bottom: 15px; }
+        .target-box { background: var(--glass); border-left: 4px solid var(--archon-cyan); padding: 18px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(12px); position: relative; overflow: hidden; margin-bottom: 15px; flex-shrink: 0; }
         .scanning-laser { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--archon-warn); opacity: 0; z-index: 5; }
         body.hacking .scanning-laser { opacity: 1; animation: scanSweep 2s linear infinite; }
-        .progress-bar { height: 4px; width: 0%; background: var(--archon-cyan); transition: 0.6s; box-shadow: 0 0 15px var(--archon-cyan); margin-bottom: 20px; }
+        .progress-bar { height: 4px; width: 0%; background: var(--archon-cyan); transition: 0.6s; box-shadow: 0 0 15px var(--archon-cyan); margin-bottom: 20px; flex-shrink: 0; }
         
         .btn { background: rgba(0,0,0,0.7); border: 1px solid var(--archon-cyan); color: var(--archon-cyan); padding: 16px; font-family: 'Orbitron', sans-serif; font-size: 13px; text-align: center; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;}
         .btn:active { background: var(--archon-cyan); color: #000; transform: scale(0.98); }
         
-        .card { background: var(--glass); border-top: 2px solid var(--archon-cyan); padding: 15px; animation: cardIn 0.5s ease-out forwards; margin-bottom: 12px; }
+        /* ⚡ CRITICAL SCROLL FIXES APPLIED HERE ⚡ */
+        .stream { 
+            flex: 1 1 0; /* Forces container to respect boundaries */
+            min-height: 0; /* Fixes overflow bug on Safari/Chrome */
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            padding-bottom: 20px; 
+            scrollbar-width: none; 
+            -webkit-overflow-scrolling: touch; /* Momentum scrolling for iOS */
+            touch-action: pan-y; /* Tells device to allow vertical swiping */
+        }
+        .stream::-webkit-scrollbar { display: none; }
+        
+        .card { background: var(--glass); border-top: 2px solid var(--archon-cyan); padding: 15px; animation: cardIn 0.5s ease-out forwards; flex-shrink: 0; }
         @keyframes cardIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
         
-        .terminal { height: 120px; background: rgba(0,2,5,0.9); border: 1px solid #1a1a1a; padding: 10px; font-size: 11px; color: #0f0; overflow-y: auto; border-top: 2px solid #333; position: relative; }
+        .terminal { height: 120px; background: rgba(0,2,5,0.9); border: 1px solid #1a1a1a; padding: 10px; font-size: 11px; color: #0f0; overflow-y: auto; border-top: 2px solid #333; position: relative; flex-shrink: 0; scrollbar-width: none;}
+        .terminal::-webkit-scrollbar { display: none; }
         .log-line { margin-bottom: 4px; }
         .log-line.kern { color: #555; font-size: 9px; }
         
@@ -59,7 +76,7 @@
         
         <div class="progress-bar" id="prog-bar"></div>
         
-        <div class="interactive" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+        <div class="interactive" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px; flex-shrink:0;">
             <div class="btn" onclick="start()">Execute Omni-Chain</div>
             <div class="btn" onclick="location.reload()" style="border-color:#444; color:#666;">Purge</div>
         </div>
@@ -69,7 +86,15 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp; const p = new URLSearchParams(window.location.search); const target = p.get('target') || "DEMO";
+        const tg = window.Telegram.WebApp; 
+        
+        // ⚡ TELEGRAM SWIPE-HIJACK FIX ⚡
+        try { 
+            tg.expand(); 
+            tg.disableVerticalSwipes(); // Stops Telegram from pulling down when you try to scroll
+        } catch(e) {}
+
+        const p = new URLSearchParams(window.location.search); const target = p.get('target') || "DEMO";
         const BACKEND = "https://archon-intelligence-backend.onrender.com";
         
         setTimeout(() => { document.getElementById('boot-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('boot-screen').remove(); visualDecrypt(document.getElementById('target-id'), target); }, 800); }, 1200);
@@ -117,7 +142,13 @@
 
                 h += `<div style="margin-bottom:8px;"><div style="font-size:9px; color:#555; text-transform:uppercase;">${k.replace(/_/g, ' ')}</div><div id="v-${title}-${k}" style="font-size:${isAI?'14px':'15px'}; color:${colorClass}; margin-top:2px; word-break: break-all; cursor:pointer;">---</div></div>`;
             });
-            card.innerHTML = h; document.getElementById('stream').prepend(card);
+            card.innerHTML = h; 
+            
+            const stream = document.getElementById('stream');
+            stream.prepend(card);
+            // ⚡ SCROLL TO TOP ON NEW CARD ⚡
+            stream.scrollTop = 0; 
+            
             Object.entries(data.analysis).forEach(([k, v]) => {
                 const el = document.getElementById(`v-${title}-${k}`);
                 el.onclick = () => copy(String(v));
